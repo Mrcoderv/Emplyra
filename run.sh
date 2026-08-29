@@ -52,6 +52,11 @@ wait_port() {
   return 1
 }
 
+# port_open <host> <port>  — quick single TCP probe: 0 if accepting, 1 if closed/free.
+port_open() {
+  (exec 3<>"/dev/tcp/$1/$2") 2>/dev/null
+}
+
 CLEANED=0
 cleanup() {
   [ "$CLEANED" = 1 ] && return
@@ -79,11 +84,11 @@ docker info >/dev/null 2>&1 || fail "Docker is not running. Start Docker Desktop
 
 # If host port 5432 is already taken (e.g. by a locally installed Postgres),
 # pick the next free port for the database and point the backend at it.
-if wait_port 127.0.0.1 5432; then
+if port_open 127.0.0.1 5432; then
   warn "Port 5432 is already in use (a local Postgres?). Finding a free port for the Emplyra database..."
   DB_HOST_PORT=""
   for candidate in $(seq 5433 5452); do
-    if ! wait_port 127.0.0.1 "$candidate"; then
+    if ! port_open 127.0.0.1 "$candidate"; then
       DB_HOST_PORT="$candidate"
       break
     fi
