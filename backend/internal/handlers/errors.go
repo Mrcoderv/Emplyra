@@ -39,6 +39,8 @@ func mapServiceError(c *gin.Context, err error) bool {
 		responses.Error(c, http.StatusUnauthorized, "invalid credentials", nil)
 	case errors.Is(err, services.ErrAccountDisabled):
 		responses.Error(c, http.StatusForbidden, "account is disabled", nil)
+	case errors.Is(err, services.ErrRoleScopeMismatch):
+		responses.Error(c, http.StatusForbidden, err.Error(), nil)
 	case errors.Is(err, services.ErrTokenInvalid):
 		responses.Error(c, http.StatusUnauthorized, "invalid or expired token", nil)
 	case errors.Is(err, services.ErrInsufficientLeaveBalance):
@@ -55,6 +57,23 @@ func mapServiceError(c *gin.Context, err error) bool {
 		responses.Error(c, http.StatusConflict, err.Error(), nil)
 	case errors.Is(err, services.ErrEnrollmentDuplicate):
 		responses.Error(c, http.StatusConflict, err.Error(), nil)
+	case errors.Is(err, services.ErrGoogleNotConfigured):
+		responses.Error(c, http.StatusServiceUnavailable, err.Error(), nil)
+	case errors.Is(err, services.ErrGoogleNotAuthorized):
+		responses.Error(c, http.StatusUnauthorized, err.Error(), nil)
+	case errors.Is(err, services.ErrGooglePermissionDenied):
+		responses.Error(c, http.StatusForbidden, err.Error(), nil)
+	case errors.Is(err, services.ErrGoogleRateLimit):
+		responses.Error(c, http.StatusTooManyRequests, err.Error(), nil)
+	case errors.Is(err, services.ErrGoogleNetwork), errors.Is(err, services.ErrGoogleAPIStatus):
+		responses.Error(c, http.StatusBadGateway, err.Error(), nil)
+	case errors.Is(err, services.ErrGoogleInvalidForm), errors.Is(err, services.ErrGoogleNoData):
+		responses.Error(c, http.StatusUnprocessableEntity, err.Error(), nil)
+	case errors.Is(err, services.ErrGoogleInvalidSpreadsheet), errors.Is(err, services.ErrGoogleNotConnected):
+		responses.Error(c, http.StatusBadRequest, err.Error(), nil)
+	case errors.Is(err, services.ErrGoogleMissingHeader), errors.Is(err, services.ErrGoogleMissingEmail),
+		errors.Is(err, services.ErrGoogleTargetInvalid), errors.Is(err, services.ErrGoogleOAuthStateInvalid):
+		responses.Error(c, http.StatusUnprocessableEntity, err.Error(), nil)
 	default:
 		responses.Error(c, http.StatusInternalServerError, "internal server error", nil)
 	}

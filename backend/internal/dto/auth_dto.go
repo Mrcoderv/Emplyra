@@ -25,9 +25,19 @@ type UserDTO struct {
 	LastLogin string `json:"last_login"`
 }
 
+type MeTenant struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
+	Plan   string `json:"plan"`
+}
+
 type MeResponse struct {
-	User        UserDTO  `json:"user"`
-	Permissions []string `json:"permissions"`
+	User        UserDTO   `json:"user"`
+	Permissions []string  `json:"permissions"`
+	Roles       []string  `json:"roles"`
+	Scope       string    `json:"scope"`
+	Tenant      *MeTenant `json:"tenant,omitempty"`
 }
 
 type CreateUserRequest struct {

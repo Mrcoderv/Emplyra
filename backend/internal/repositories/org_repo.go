@@ -15,31 +15,31 @@ func NewDepartmentRepository(db *gorm.DB) *DepartmentRepository {
 }
 
 func (r *DepartmentRepository) Create(d *models.Department) error { return r.db.Create(d).Error }
-func (r *DepartmentRepository) Update(id string, fields map[string]interface{}) error {
-	return r.db.Model(&models.Department{}).Where("id = ?", id).Updates(fields).Error
+func (r *DepartmentRepository) Update(tenantID, id string, fields map[string]interface{}) error {
+	return r.db.Model(&models.Department{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(fields).Error
 }
-func (r *DepartmentRepository) Delete(id string) error {
-	return r.db.Delete(&models.Department{}, "id = ?", id).Error
+func (r *DepartmentRepository) Delete(tenantID, id string) error {
+	return r.db.Scopes(TenantScope(tenantID)).Delete(&models.Department{}, "id = ?", id).Error
 }
-func (r *DepartmentRepository) FindByID(id string) (*models.Department, error) {
+func (r *DepartmentRepository) FindByID(tenantID, id string) (*models.Department, error) {
 	var d models.Department
-	err := r.db.Preload("Manager").First(&d, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Manager").First(&d, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &d, nil
 }
-func (r *DepartmentRepository) FindByCode(code string) (*models.Department, error) {
+func (r *DepartmentRepository) FindByCode(tenantID, code string) (*models.Department, error) {
 	var d models.Department
-	err := r.db.Where("code = ?", code).First(&d).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Where("code = ?", code).First(&d).Error
 	if err != nil {
 		return nil, err
 	}
 	return &d, nil
 }
-func (r *DepartmentRepository) List(filter func(*gorm.DB) *gorm.DB) ([]models.Department, error) {
+func (r *DepartmentRepository) List(tenantID string, filter func(*gorm.DB) *gorm.DB) ([]models.Department, error) {
 	var deps []models.Department
-	q := r.db.Preload("Manager").Order("name ASC")
+	q := r.db.Scopes(TenantScope(tenantID)).Preload("Manager").Order("name ASC")
 	if filter != nil {
 		q = filter(q)
 	}
@@ -56,22 +56,22 @@ func NewDesignationRepository(db *gorm.DB) *DesignationRepository {
 }
 
 func (r *DesignationRepository) Create(d *models.Designation) error { return r.db.Create(d).Error }
-func (r *DesignationRepository) Update(id string, fields map[string]interface{}) error {
-	return r.db.Model(&models.Designation{}).Where("id = ?", id).Updates(fields).Error
+func (r *DesignationRepository) Update(tenantID, id string, fields map[string]interface{}) error {
+	return r.db.Model(&models.Designation{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(fields).Error
 }
-func (r *DesignationRepository) Delete(id string) error {
-	return r.db.Delete(&models.Designation{}, "id = ?", id).Error
+func (r *DesignationRepository) Delete(tenantID, id string) error {
+	return r.db.Scopes(TenantScope(tenantID)).Delete(&models.Designation{}, "id = ?", id).Error
 }
-func (r *DesignationRepository) FindByID(id string) (*models.Designation, error) {
+func (r *DesignationRepository) FindByID(tenantID, id string) (*models.Designation, error) {
 	var d models.Designation
-	err := r.db.Preload("Department").First(&d, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Department").First(&d, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &d, nil
 }
-func (r *DesignationRepository) List() ([]models.Designation, error) {
+func (r *DesignationRepository) List(tenantID string) ([]models.Designation, error) {
 	var items []models.Designation
-	err := r.db.Preload("Department").Order("level ASC, name ASC").Find(&items).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Department").Order("level ASC, name ASC").Find(&items).Error
 	return items, err
 }

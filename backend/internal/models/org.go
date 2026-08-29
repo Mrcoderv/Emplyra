@@ -11,8 +11,9 @@ const (
 
 type Department struct {
 	BaseModel
+	TenantID    string          `gorm:"type:uuid;not null;uniqueIndex:idx_dept_code_tenant,priority:2;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	Name        string          `gorm:"size:150;not null" json:"name"`
-	Code        string          `gorm:"size:50;uniqueIndex;not null" json:"code"`
+	Code        string          `gorm:"size:50;uniqueIndex:idx_dept_code_tenant,priority:1;not null" json:"code"`
 	Description string          `gorm:"size:500" json:"description"`
 	ManagerID   *string         `gorm:"type:uuid;index" json:"manager_id"`
 	Manager     *Employee       `gorm:"foreignKey:ManagerID" json:"manager,omitempty"`
@@ -21,6 +22,7 @@ type Department struct {
 
 type Designation struct {
 	BaseModel
+	TenantID     string          `gorm:"type:uuid;not null;index;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	Name         string          `gorm:"size:150;not null" json:"name"`
 	Description  string          `gorm:"size:500" json:"description"`
 	DepartmentID *string         `gorm:"type:uuid;index" json:"department_id"`
@@ -59,10 +61,11 @@ const (
 
 type Employee struct {
 	SoftDeleteModel
-	EmployeeCode     string         `gorm:"size:50;uniqueIndex;not null" json:"employee_code"`
+	TenantID         string         `gorm:"type:uuid;not null;uniqueIndex:idx_emp_code_tenant,priority:2;uniqueIndex:idx_emp_email_tenant,priority:2;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
+	EmployeeCode     string         `gorm:"size:50;uniqueIndex:idx_emp_code_tenant,priority:1;not null" json:"employee_code"`
 	FirstName        string         `gorm:"size:100;not null" json:"first_name"`
 	LastName         string         `gorm:"size:100" json:"last_name"`
-	Email            string         `gorm:"size:255;uniqueIndex;not null" json:"email"`
+	Email            string         `gorm:"size:255;uniqueIndex:idx_emp_email_tenant,priority:1;not null" json:"email"`
 	Phone            string         `gorm:"size:30" json:"phone"`
 	DateOfBirth      *time.Time     `json:"date_of_birth,omitempty"`
 	Gender           *Gender        `gorm:"size:20" json:"gender,omitempty"`

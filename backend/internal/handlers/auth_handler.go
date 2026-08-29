@@ -78,15 +78,26 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	if p == nil {
 		return
 	}
-	user, perms, err := h.auth.Me(p.UserID)
+	res, err := h.auth.Me(p.UserID)
 	if err != nil {
 		mapServiceError(c, err)
 		return
 	}
-	responses.OK(c, "current user", dto.MeResponse{
-		User:        toUserDTO(user),
-		Permissions: perms,
-	})
+	resp := dto.MeResponse{
+		User:        toUserDTO(res.User),
+		Permissions: res.Permissions,
+		Roles:       res.Roles,
+		Scope:       res.Scope,
+	}
+	if res.Tenant != nil {
+		resp.Tenant = &dto.MeTenant{
+			ID:     res.Tenant.ID,
+			Name:   res.Tenant.Name,
+			Status: string(res.Tenant.Status),
+			Plan:   string(res.Tenant.Plan),
+		}
+	}
+	responses.OK(c, "current user", resp)
 }
 
 func toUserDTO(u *models.User) dto.UserDTO {

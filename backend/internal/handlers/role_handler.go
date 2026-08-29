@@ -23,7 +23,8 @@ func NewRoleHandler(roles *services.RoleService) *RoleHandler {
 }
 
 func (h *RoleHandler) List(c *gin.Context) {
-	roles, err := h.roles.List()
+	actor := middleware.MustPrincipal(c)
+	roles, err := h.roles.List(actor.Scope)
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -36,7 +37,8 @@ func (h *RoleHandler) List(c *gin.Context) {
 }
 
 func (h *RoleHandler) Get(c *gin.Context) {
-	r, err := h.roles.Get(c.Param("id"))
+	actor := middleware.MustPrincipal(c)
+	r, err := h.roles.Get(c.Param("id"), actor.Scope)
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -51,7 +53,7 @@ func (h *RoleHandler) Create(c *gin.Context) {
 		return
 	}
 	actor := middleware.MustPrincipal(c)
-	r, err := h.roles.Create(req.Name, req.Description, req.PermissionIDs, actor.UserID, clientIP(c), userAgent(c))
+	r, err := h.roles.Create(req.Name, req.Description, req.PermissionIDs, actor.Scope, actor.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -66,7 +68,7 @@ func (h *RoleHandler) Update(c *gin.Context) {
 		return
 	}
 	actor := middleware.MustPrincipal(c)
-	r, err := h.roles.Update(c.Param("id"), req.Name, req.Description, req.PermissionIDs, actor.UserID, clientIP(c), userAgent(c))
+	r, err := h.roles.Update(c.Param("id"), req.Name, req.Description, req.PermissionIDs, actor.Scope, actor.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -76,7 +78,7 @@ func (h *RoleHandler) Update(c *gin.Context) {
 
 func (h *RoleHandler) Delete(c *gin.Context) {
 	actor := middleware.MustPrincipal(c)
-	err := h.roles.Delete(c.Param("id"), actor.UserID, clientIP(c), userAgent(c))
+	err := h.roles.Delete(c.Param("id"), actor.UserID, clientIP(c), userAgent(c), actor.Scope)
 	if err != nil {
 		if errors.Is(err, repositories.ErrRoleInUse) {
 			responses.Error(c, 409, "role is assigned to users", nil)

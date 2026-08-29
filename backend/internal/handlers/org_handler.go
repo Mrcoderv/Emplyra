@@ -19,7 +19,7 @@ func NewDepartmentHandler(svc *services.DepartmentService) *DepartmentHandler {
 }
 
 func (h *DepartmentHandler) List(c *gin.Context) {
-	items, err := h.svc.List()
+	items, err := h.svc.List(middleware.TenantID(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -28,7 +28,7 @@ func (h *DepartmentHandler) List(c *gin.Context) {
 }
 
 func (h *DepartmentHandler) Get(c *gin.Context) {
-	d, err := h.svc.Get(c.Param("id"))
+	d, err := h.svc.Get(middleware.TenantID(c), c.Param("id"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -43,7 +43,7 @@ func (h *DepartmentHandler) Create(c *gin.Context) {
 		return
 	}
 	actor := middleware.MustPrincipal(c)
-	d, err := h.svc.Create(struct{ Name, Code, Description, ManagerID, Status string }{
+	d, err := h.svc.Create(middleware.TenantID(c), struct{ Name, Code, Description, ManagerID, Status string }{
 		Name: sanitizeField(req.Name), Code: sanitizeField(req.Code), Description: req.Description, ManagerID: req.ManagerID, Status: req.Status,
 	}, actor.UserID, clientIP(c), userAgent(c))
 	if err != nil {
@@ -60,7 +60,7 @@ func (h *DepartmentHandler) Update(c *gin.Context) {
 		return
 	}
 	actor := middleware.MustPrincipal(c)
-	d, err := h.svc.Update(c.Param("id"), struct{ Name, Code, Description, ManagerID, Status string }{
+	d, err := h.svc.Update(middleware.TenantID(c), c.Param("id"), struct{ Name, Code, Description, ManagerID, Status string }{
 		Name: sanitizeField(req.Name), Code: sanitizeField(req.Code), Description: req.Description, ManagerID: req.ManagerID, Status: req.Status,
 	}, actor.UserID, clientIP(c), userAgent(c))
 	if err != nil {
@@ -72,7 +72,7 @@ func (h *DepartmentHandler) Update(c *gin.Context) {
 
 func (h *DepartmentHandler) Delete(c *gin.Context) {
 	actor := middleware.MustPrincipal(c)
-	if err := h.svc.Delete(c.Param("id"), actor.UserID, clientIP(c), userAgent(c)); err != nil {
+	if err := h.svc.Delete(middleware.TenantID(c), c.Param("id"), actor.UserID, clientIP(c), userAgent(c)); err != nil {
 		mapServiceError(c, err)
 		return
 	}
@@ -88,7 +88,7 @@ func NewDesignationHandler(svc *services.DesignationService) *DesignationHandler
 }
 
 func (h *DesignationHandler) List(c *gin.Context) {
-	items, err := h.svc.List()
+	items, err := h.svc.List(middleware.TenantID(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -97,7 +97,7 @@ func (h *DesignationHandler) List(c *gin.Context) {
 }
 
 func (h *DesignationHandler) Get(c *gin.Context) {
-	d, err := h.svc.Get(c.Param("id"))
+	d, err := h.svc.Get(middleware.TenantID(c), c.Param("id"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -112,7 +112,7 @@ func (h *DesignationHandler) Create(c *gin.Context) {
 		return
 	}
 	actor := middleware.MustPrincipal(c)
-	d, err := h.svc.Create(struct {
+	d, err := h.svc.Create(middleware.TenantID(c), struct {
 		Name, Description, DepartmentID, Status string
 		Level                                   int
 	}{
@@ -132,7 +132,7 @@ func (h *DesignationHandler) Update(c *gin.Context) {
 		return
 	}
 	actor := middleware.MustPrincipal(c)
-	d, err := h.svc.Update(c.Param("id"), struct {
+	d, err := h.svc.Update(middleware.TenantID(c), c.Param("id"), struct {
 		Name, Description, DepartmentID, Status string
 		Level                                   int
 	}{
@@ -147,7 +147,7 @@ func (h *DesignationHandler) Update(c *gin.Context) {
 
 func (h *DesignationHandler) Delete(c *gin.Context) {
 	actor := middleware.MustPrincipal(c)
-	if err := h.svc.Delete(c.Param("id"), actor.UserID, clientIP(c), userAgent(c)); err != nil {
+	if err := h.svc.Delete(middleware.TenantID(c), c.Param("id"), actor.UserID, clientIP(c), userAgent(c)); err != nil {
 		mapServiceError(c, err)
 		return
 	}

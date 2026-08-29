@@ -15,6 +15,7 @@ const (
 
 type SalaryStructure struct {
 	BaseModel
+	TenantID       string                `gorm:"type:uuid;not null;index;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	EmployeeID     string                `gorm:"type:uuid;not null;index" json:"employee_id"`
 	Employee       *Employee             `gorm:"foreignKey:EmployeeID" json:"employee,omitempty"`
 	BasicSalary    Decimal               `gorm:"type:numeric(14,2);not null" json:"basic_salary"`
@@ -41,6 +42,7 @@ const (
 
 type Payroll struct {
 	BaseModel
+	TenantID          string        `gorm:"type:uuid;not null;index;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	Month             int           `gorm:"not null;uniqueIndex:idx_payroll_emp_month_year" json:"month"`
 	Year              int           `gorm:"not null;uniqueIndex:idx_payroll_emp_month_year" json:"year"`
 	EmployeeID        string        `gorm:"type:uuid;not null;index;uniqueIndex:idx_payroll_emp_month_year" json:"employee_id"`

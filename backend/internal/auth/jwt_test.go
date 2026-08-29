@@ -7,7 +7,7 @@ import (
 
 func TestJWTGenerateParseRoundTrip(t *testing.T) {
 	m := NewJWTManager("test-secret", time.Hour)
-	token, err := m.Generate("u1", "jdoe", "HR_ADMIN", "r1")
+	token, err := m.Generate("u1", "jdoe", "HR_ADMIN", "r1", "tenant", "t1")
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}
@@ -15,14 +15,14 @@ func TestJWTGenerateParseRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	if claims.UserID != "u1" || claims.Username != "jdoe" || claims.Role != "HR_ADMIN" || claims.RoleID != "r1" {
+	if claims.UserID != "u1" || claims.Username != "jdoe" || claims.Role != "HR_ADMIN" || claims.RoleID != "r1" || claims.Scope != "tenant" || claims.TenantID != "t1" {
 		t.Fatalf("claims mismatch: %+v", claims)
 	}
 }
 
 func TestJWTParseExpired(t *testing.T) {
 	m := NewJWTManager("test-secret", -time.Minute)
-	token, err := m.Generate("u1", "jdoe", "EMPLOYEE", "r2")
+	token, err := m.Generate("u1", "jdoe", "EMPLOYEE", "r2", "tenant", "t1")
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}
@@ -34,7 +34,7 @@ func TestJWTParseExpired(t *testing.T) {
 func TestJWTParseWrongSecret(t *testing.T) {
 	m := NewJWTManager("test-secret", time.Hour)
 	other := NewJWTManager("other-secret", time.Hour)
-	token, err := m.Generate("u1", "jdoe", "EMPLOYEE", "r2")
+	token, err := m.Generate("u1", "jdoe", "EMPLOYEE", "r2", "tenant", "t1")
 	if err != nil {
 		t.Fatalf("generate: %v", err)
 	}

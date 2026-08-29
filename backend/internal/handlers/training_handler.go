@@ -26,7 +26,7 @@ func (h *TrainingHandler) CreateProgram(c *gin.Context) {
 		return
 	}
 	a := middleware.MustPrincipal(c)
-	p, err := h.svc.CreateProgram(services.ProgramInput{Title: req.Title, Description: req.Description, Provider: req.Provider, StartDate: req.StartDate, EndDate: req.EndDate, Location: req.Location, MaxSeats: req.MaxSeats, Status: req.Status}, a.UserID, clientIP(c), userAgent(c))
+	p, err := h.svc.CreateProgram(middleware.TenantID(c), services.ProgramInput{Title: req.Title, Description: req.Description, Provider: req.Provider, StartDate: req.StartDate, EndDate: req.EndDate, Location: req.Location, MaxSeats: req.MaxSeats, Status: req.Status}, a.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -41,7 +41,7 @@ func (h *TrainingHandler) UpdateProgram(c *gin.Context) {
 		return
 	}
 	a := middleware.MustPrincipal(c)
-	p, err := h.svc.UpdateProgram(c.Param("id"), services.ProgramInput{Title: req.Title, Description: req.Description, Provider: req.Provider, StartDate: req.StartDate, EndDate: req.EndDate, Location: req.Location, MaxSeats: req.MaxSeats, Status: req.Status}, a.UserID, clientIP(c), userAgent(c))
+	p, err := h.svc.UpdateProgram(middleware.TenantID(c), c.Param("id"), services.ProgramInput{Title: req.Title, Description: req.Description, Provider: req.Provider, StartDate: req.StartDate, EndDate: req.EndDate, Location: req.Location, MaxSeats: req.MaxSeats, Status: req.Status}, a.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -51,7 +51,7 @@ func (h *TrainingHandler) UpdateProgram(c *gin.Context) {
 
 func (h *TrainingHandler) DeleteProgram(c *gin.Context) {
 	a := middleware.MustPrincipal(c)
-	if err := h.svc.DeleteProgram(c.Param("id"), a.UserID, clientIP(c), userAgent(c)); err != nil {
+	if err := h.svc.DeleteProgram(middleware.TenantID(c), c.Param("id"), a.UserID, clientIP(c), userAgent(c)); err != nil {
 		mapServiceError(c, err)
 		return
 	}
@@ -59,7 +59,7 @@ func (h *TrainingHandler) DeleteProgram(c *gin.Context) {
 }
 
 func (h *TrainingHandler) GetProgram(c *gin.Context) {
-	p, err := h.svc.Program(c.Param("id"))
+	p, err := h.svc.Program(middleware.TenantID(c), c.Param("id"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -69,7 +69,7 @@ func (h *TrainingHandler) GetProgram(c *gin.Context) {
 
 func (h *TrainingHandler) ListPrograms(c *gin.Context) {
 	p := utils.NewPagination(c.Query("page"), c.Query("page_size"))
-	items, total, err := h.svc.Programs(p, c.Query("status"))
+	items, total, err := h.svc.Programs(middleware.TenantID(c), p, c.Query("status"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -84,7 +84,7 @@ func (h *TrainingHandler) CreateSchedule(c *gin.Context) {
 		return
 	}
 	a := middleware.MustPrincipal(c)
-	s, err := h.svc.CreateSchedule(struct {
+	s, err := h.svc.CreateSchedule(middleware.TenantID(c), struct {
 		ProgramID, Date, StartTime, EndTime, Trainer, Location string
 		MaxSeats                                               int
 	}{req.ProgramID, req.Date, req.StartTime, req.EndTime, req.Trainer, req.Location, req.MaxSeats}, a.UserID, clientIP(c), userAgent(c))
@@ -102,7 +102,7 @@ func (h *TrainingHandler) UpdateSchedule(c *gin.Context) {
 		return
 	}
 	a := middleware.MustPrincipal(c)
-	s, err := h.svc.UpdateSchedule(c.Param("id"), struct {
+	s, err := h.svc.UpdateSchedule(middleware.TenantID(c), c.Param("id"), struct {
 		ProgramID, Date, StartTime, EndTime, Trainer, Location string
 		MaxSeats                                               int
 	}{req.ProgramID, req.Date, req.StartTime, req.EndTime, req.Trainer, req.Location, req.MaxSeats}, a.UserID, clientIP(c), userAgent(c))
@@ -115,7 +115,7 @@ func (h *TrainingHandler) UpdateSchedule(c *gin.Context) {
 
 func (h *TrainingHandler) DeleteSchedule(c *gin.Context) {
 	a := middleware.MustPrincipal(c)
-	if err := h.svc.DeleteSchedule(c.Param("id"), a.UserID, clientIP(c), userAgent(c)); err != nil {
+	if err := h.svc.DeleteSchedule(middleware.TenantID(c), c.Param("id"), a.UserID, clientIP(c), userAgent(c)); err != nil {
 		mapServiceError(c, err)
 		return
 	}
@@ -123,7 +123,7 @@ func (h *TrainingHandler) DeleteSchedule(c *gin.Context) {
 }
 
 func (h *TrainingHandler) ListSchedules(c *gin.Context) {
-	items, err := h.svc.Schedules(c.Query("program_id"))
+	items, err := h.svc.Schedules(middleware.TenantID(c), c.Query("program_id"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -142,7 +142,7 @@ func (h *TrainingHandler) Enroll(c *gin.Context) {
 		employeeID = middleware.EmployeeID(c)
 	}
 	a := middleware.MustPrincipal(c)
-	e, err := h.svc.Enroll(req.ProgramID, employeeID, a.UserID, clientIP(c), userAgent(c))
+	e, err := h.svc.Enroll(middleware.TenantID(c), req.ProgramID, employeeID, a.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -157,7 +157,7 @@ func (h *TrainingHandler) UpdateEnrollment(c *gin.Context) {
 		return
 	}
 	a := middleware.MustPrincipal(c)
-	e, err := h.svc.UpdateEnrollment(c.Param("id"), req.Status, a.UserID, clientIP(c), userAgent(c))
+	e, err := h.svc.UpdateEnrollment(middleware.TenantID(c), c.Param("id"), req.Status, a.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -174,7 +174,7 @@ func (h *TrainingHandler) ListEnrollments(c *gin.Context) {
 			employeeID = middleware.EmployeeID(c)
 		}
 	}
-	items, total, err := h.svc.Enrollments(p, c.Query("program_id"), employeeID, c.Query("status"))
+	items, total, err := h.svc.Enrollments(middleware.TenantID(c), p, c.Query("program_id"), employeeID, c.Query("status"))
 	if err != nil {
 		mapServiceError(c, err)
 		return

@@ -30,11 +30,12 @@ type GoalInput struct {
 	Weight                                             int
 }
 
-func (s *PerformanceService) CreateGoal(in GoalInput, actorID, ip, ua string) (*models.Goal, error) {
-	if _, err := s.emp.FindByID(in.EmployeeID); err != nil {
+func (s *PerformanceService) CreateGoal(tenantID string, in GoalInput, actorID, ip, ua string) (*models.Goal, error) {
+	if _, err := s.emp.FindByID(tenantID, in.EmployeeID); err != nil {
 		return nil, ErrNotFound
 	}
 	g := &models.Goal{
+		TenantID:   tenantID,
 		EmployeeID: in.EmployeeID, Title: in.Title, Description: in.Description,
 		Status: models.GoalStatus(orStr(in.Status, string(models.GoalNotStarted))),
 		Weight: in.Weight,
@@ -52,8 +53,8 @@ func (s *PerformanceService) CreateGoal(in GoalInput, actorID, ip, ua string) (*
 	return g, nil
 }
 
-func (s *PerformanceService) UpdateGoal(id string, in GoalInput, actorID, ip, ua string) (*models.Goal, error) {
-	if _, err := s.goals.FindByID(id); err != nil {
+func (s *PerformanceService) UpdateGoal(tenantID, id string, in GoalInput, actorID, ip, ua string) (*models.Goal, error) {
+	if _, err := s.goals.FindByID(tenantID, id); err != nil {
 		return nil, ErrNotFound
 	}
 	fields := map[string]interface{}{}
@@ -74,34 +75,34 @@ func (s *PerformanceService) UpdateGoal(id string, in GoalInput, actorID, ip, ua
 			fields["target_date"] = datatypes.Date(d)
 		}
 	}
-	if err := s.goals.Update(id, fields); err != nil {
+	if err := s.goals.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "goal", id, ip, ua, nil)
-	return s.goals.FindByID(id)
+	return s.goals.FindByID(tenantID, id)
 }
 
-func (s *PerformanceService) DeleteGoal(id, actorID, ip, ua string) error {
-	if _, err := s.goals.FindByID(id); err != nil {
+func (s *PerformanceService) DeleteGoal(tenantID, id, actorID, ip, ua string) error {
+	if _, err := s.goals.FindByID(tenantID, id); err != nil {
 		return ErrNotFound
 	}
-	if err := s.goals.Delete(id); err != nil {
+	if err := s.goals.Delete(tenantID, id); err != nil {
 		return err
 	}
 	s.audit.Record(actorID, models.ActionDelete, "goal", id, ip, ua, nil)
 	return nil
 }
 
-func (s *PerformanceService) Goal(id string) (*models.Goal, error) {
-	g, err := s.goals.FindByID(id)
+func (s *PerformanceService) Goal(tenantID, id string) (*models.Goal, error) {
+	g, err := s.goals.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return g, nil
 }
 
-func (s *PerformanceService) Goals(p utils.Pagination, employeeIDs []string, status string) ([]models.Goal, int64, error) {
-	return s.goals.List(p, employeeIDs, status)
+func (s *PerformanceService) Goals(tenantID string, p utils.Pagination, employeeIDs []string, status string) ([]models.Goal, int64, error) {
+	return s.goals.List(tenantID, p, employeeIDs, status)
 }
 
 // --- KPIs ---
@@ -112,11 +113,12 @@ type KPIInput struct {
 	Score                                                       *float64
 }
 
-func (s *PerformanceService) CreateKPI(in KPIInput, actorID, ip, ua string) (*models.KPI, error) {
-	if _, err := s.emp.FindByID(in.EmployeeID); err != nil {
+func (s *PerformanceService) CreateKPI(tenantID string, in KPIInput, actorID, ip, ua string) (*models.KPI, error) {
+	if _, err := s.emp.FindByID(tenantID, in.EmployeeID); err != nil {
 		return nil, ErrNotFound
 	}
 	k := &models.KPI{
+		TenantID:   tenantID,
 		EmployeeID: in.EmployeeID, Name: in.Name, Description: in.Description,
 		Target: in.Target, Actual: in.Actual, Unit: in.Unit, Weight: in.Weight,
 		Period: in.Period, Score: in.Score,
@@ -128,8 +130,8 @@ func (s *PerformanceService) CreateKPI(in KPIInput, actorID, ip, ua string) (*mo
 	return k, nil
 }
 
-func (s *PerformanceService) UpdateKPI(id string, in KPIInput, actorID, ip, ua string) (*models.KPI, error) {
-	if _, err := s.kpis.FindByID(id); err != nil {
+func (s *PerformanceService) UpdateKPI(tenantID, id string, in KPIInput, actorID, ip, ua string) (*models.KPI, error) {
+	if _, err := s.kpis.FindByID(tenantID, id); err != nil {
 		return nil, ErrNotFound
 	}
 	fields := map[string]interface{}{}
@@ -157,34 +159,34 @@ func (s *PerformanceService) UpdateKPI(id string, in KPIInput, actorID, ip, ua s
 	if in.Score != nil {
 		fields["score"] = *in.Score
 	}
-	if err := s.kpis.Update(id, fields); err != nil {
+	if err := s.kpis.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "kpi", id, ip, ua, nil)
-	return s.kpis.FindByID(id)
+	return s.kpis.FindByID(tenantID, id)
 }
 
-func (s *PerformanceService) DeleteKPI(id, actorID, ip, ua string) error {
-	if _, err := s.kpis.FindByID(id); err != nil {
+func (s *PerformanceService) DeleteKPI(tenantID, id, actorID, ip, ua string) error {
+	if _, err := s.kpis.FindByID(tenantID, id); err != nil {
 		return ErrNotFound
 	}
-	if err := s.kpis.Delete(id); err != nil {
+	if err := s.kpis.Delete(tenantID, id); err != nil {
 		return err
 	}
 	s.audit.Record(actorID, models.ActionDelete, "kpi", id, ip, ua, nil)
 	return nil
 }
 
-func (s *PerformanceService) KPI(id string) (*models.KPI, error) {
-	k, err := s.kpis.FindByID(id)
+func (s *PerformanceService) KPI(tenantID, id string) (*models.KPI, error) {
+	k, err := s.kpis.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return k, nil
 }
 
-func (s *PerformanceService) KPIs(p utils.Pagination, employeeIDs []string, period string) ([]models.KPI, int64, error) {
-	return s.kpis.List(p, employeeIDs, period)
+func (s *PerformanceService) KPIs(tenantID string, p utils.Pagination, employeeIDs []string, period string) ([]models.KPI, int64, error) {
+	return s.kpis.List(tenantID, p, employeeIDs, period)
 }
 
 // --- Reviews ---
@@ -193,11 +195,12 @@ type ReviewInput struct {
 	EmployeeID, ReviewerID, Period, DueDate string
 }
 
-func (s *PerformanceService) CreateReview(in ReviewInput, actorID, ip, ua string) (*models.PerformanceReview, error) {
-	if _, err := s.emp.FindByID(in.EmployeeID); err != nil {
+func (s *PerformanceService) CreateReview(tenantID string, in ReviewInput, actorID, ip, ua string) (*models.PerformanceReview, error) {
+	if _, err := s.emp.FindByID(tenantID, in.EmployeeID); err != nil {
 		return nil, ErrNotFound
 	}
 	r := &models.PerformanceReview{
+		TenantID:   tenantID,
 		EmployeeID: in.EmployeeID, Period: in.Period,
 		Status: models.ReviewPending,
 	}
@@ -217,8 +220,8 @@ func (s *PerformanceService) CreateReview(in ReviewInput, actorID, ip, ua string
 	return r, nil
 }
 
-func (s *PerformanceService) SubmitReview(id, selfEval, managerFeedback, status string, score *float64, actorID, ip, ua string) (*models.PerformanceReview, error) {
-	r, err := s.reviews.FindByID(id)
+func (s *PerformanceService) SubmitReview(tenantID, id, selfEval, managerFeedback, status string, score *float64, actorID, ip, ua string) (*models.PerformanceReview, error) {
+	r, err := s.reviews.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -248,25 +251,25 @@ func (s *PerformanceService) SubmitReview(id, selfEval, managerFeedback, status 
 	if len(fields) == 0 {
 		return r, nil
 	}
-	if err := s.reviews.Update(id, fields); err != nil {
+	if err := s.reviews.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	now := time.Now()
 	if ns, ok := fields["status"]; ok && ns == models.ReviewCompleted {
-		_ = s.reviews.Update(id, map[string]interface{}{"completed_at": &now})
+		_ = s.reviews.Update(tenantID, id, map[string]interface{}{"completed_at": &now})
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "performance_review", id, ip, ua, nil)
-	return s.reviews.FindByID(id)
+	return s.reviews.FindByID(tenantID, id)
 }
 
-func (s *PerformanceService) Review(id string) (*models.PerformanceReview, error) {
-	r, err := s.reviews.FindByID(id)
+func (s *PerformanceService) Review(tenantID, id string) (*models.PerformanceReview, error) {
+	r, err := s.reviews.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return r, nil
 }
 
-func (s *PerformanceService) Reviews(p utils.Pagination, employeeIDs []string, reviewerID, status string) ([]models.PerformanceReview, int64, error) {
-	return s.reviews.List(p, employeeIDs, reviewerID, status)
+func (s *PerformanceService) Reviews(tenantID string, p utils.Pagination, employeeIDs []string, reviewerID, status string) ([]models.PerformanceReview, int64, error) {
+	return s.reviews.List(tenantID, p, employeeIDs, reviewerID, status)
 }

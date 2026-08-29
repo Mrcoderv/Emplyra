@@ -16,18 +16,20 @@ var (
 	ErrAccountDisabled    = errors.New("account is disabled")
 	ErrTokenInvalid       = errors.New("invalid or expired token")
 	ErrUserNotFound       = errors.New("user not found")
+	ErrTenantSuspended    = errors.New("tenant is not active")
 )
 
 type AuthService struct {
-	users  *repositories.UserRepository
-	tokens *repositories.TokenRepository
-	jwt    *auth.JWTManager
-	cfg    *config.Config
-	audit  *auditmanager.Service
+	users   *repositories.UserRepository
+	tokens  *repositories.TokenRepository
+	tenants *repositories.TenantRepository
+	jwt     *auth.JWTManager
+	cfg     *config.Config
+	audit   *auditmanager.Service
 }
 
-func NewAuthService(users *repositories.UserRepository, tokens *repositories.TokenRepository, jwt *auth.JWTManager, cfg *config.Config, audit *auditmanager.Service) *AuthService {
-	return &AuthService{users: users, tokens: tokens, jwt: jwt, cfg: cfg, audit: audit}
+func NewAuthService(users *repositories.UserRepository, tokens *repositories.TokenRepository, tenants *repositories.TenantRepository, jwt *auth.JWTManager, cfg *config.Config, audit *auditmanager.Service) *AuthService {
+	return &AuthService{users: users, tokens: tokens, tenants: tenants, jwt: jwt, cfg: cfg, audit: audit}
 }
 
 type LoginInput struct {
@@ -58,6 +60,10 @@ func (s *AuthService) Login(in LoginInput) (*models.User, *TokenPair, error) {
 		s.audit.Record(user.ID, models.ActionLogin, "user", user.ID, in.IP, in.UserAgent, map[string]string{"reason": "account_disabled"})
 		return nil, nil, ErrAccountDisabled
 	}
+	if err := s.ensureTenantOperational(user); err != nil {
+		s.audit.Record(user.ID, models.ActionLogin, "user", user.ID, in.IP, in.UserAgent, map[string]string{"reason": "tenant_inactive"})
+		return nil, nil, err
+	}
 
 	pair, err := s.issueTokens(user, in.IP, in.UserAgent)
 	if err != nil {
@@ -82,6 +88,9 @@ func (s *AuthService) Refresh(refreshToken, ip, userAgent string) (*models.User,
 	if err != nil || !auth.UserStatusAllowed(user.Status) {
 		return nil, nil, ErrAccountDisabled
 	}
+	if err := s.ensureTenantOperational(user); err != nil {
+		return nil, nil, err
+	}
 	pair, err := s.issueTokens(user, ip, userAgent)
 	if err != nil {
 		return nil, nil, err
@@ -104,20 +113,70 @@ func (s *AuthService) Logout(refreshToken, ip, userAgent string) error {
 	return nil
 }
 
-func (s *AuthService) Me(userID string) (*models.User, []string, error) {
+// MeResult is the authenticated session context resolved by Me.
+type MeResult struct {
+	User        *models.User
+	Permissions []string
+	Roles       []string
+	Scope       string
+	Tenant      *models.Tenant
+}
+
+func (s *AuthService) Me(userID string) (MeResult, error) {
 	user, err := s.users.FindByID(userID)
 	if err != nil {
-		return nil, nil, ErrUserNotFound
+		return MeResult{}, ErrUserNotFound
 	}
 	perms, err := s.Users().RolePermissions(user.RoleID)
 	if err != nil {
-		return nil, nil, err
+		return MeResult{}, err
 	}
-	return user, perms, nil
+	res := MeResult{
+		User:        user,
+		Permissions: perms,
+		Scope:       models.RoleScopeTenant,
+	}
+	if user.Role != nil {
+		res.Roles = []string{user.Role.Name}
+		if user.Role.Scope != "" {
+			res.Scope = user.Role.Scope
+		}
+	}
+	if user.TenantID != nil {
+		if tenant, err := s.tenants.FindByID(*user.TenantID); err == nil {
+			res.Tenant = tenant
+		}
+	}
+	return res, nil
+}
+
+func (s *AuthService) ensureTenantOperational(user *models.User) error {
+	if user.TenantID == nil {
+		return nil
+	}
+	tenant, err := s.tenants.FindByID(*user.TenantID)
+	if err != nil {
+		return ErrTenantSuspended
+	}
+	if !tenant.IsOperational() {
+		return ErrTenantSuspended
+	}
+	return nil
 }
 
 func (s *AuthService) issueTokens(user *models.User, ip, userAgent string) (*TokenPair, error) {
-	access, err := s.jwt.Generate(user.ID, user.Username, user.Role.Name, user.RoleID)
+	scope := ""
+	if user.Role != nil {
+		scope = user.Role.Scope
+	}
+	if scope == "" {
+		scope = models.RoleScopeTenant
+	}
+	tenantID := ""
+	if user.TenantID != nil {
+		tenantID = *user.TenantID
+	}
+	access, err := s.jwt.Generate(user.ID, user.Username, user.Role.Name, user.RoleID, scope, tenantID)
 	if err != nil {
 		return nil, err
 	}

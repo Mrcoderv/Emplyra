@@ -17,6 +17,7 @@ const (
 
 type TrainingProgram struct {
 	BaseModel
+	TenantID    string         `gorm:"type:uuid;not null;index;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	Title       string         `gorm:"size:200;not null" json:"title"`
 	Description string         `gorm:"size:4000" json:"description"`
 	Provider    string         `gorm:"size:200" json:"provider"`
@@ -29,6 +30,7 @@ type TrainingProgram struct {
 
 type TrainingSchedule struct {
 	BaseModel
+	TenantID  string           `gorm:"type:uuid;not null;index;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	ProgramID string           `gorm:"type:uuid;not null;index" json:"program_id"`
 	Program   *TrainingProgram `gorm:"foreignKey:ProgramID" json:"program,omitempty"`
 	Date      datatypes.Date   `gorm:"not null" json:"date"`
@@ -50,6 +52,7 @@ const (
 
 type TrainingEnrollment struct {
 	BaseModel
+	TenantID    string           `gorm:"type:uuid;not null;index;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	ProgramID   string           `gorm:"type:uuid;not null;index" json:"program_id"`
 	Program     *TrainingProgram `gorm:"foreignKey:ProgramID" json:"program,omitempty"`
 	EmployeeID  string           `gorm:"type:uuid;not null;index" json:"employee_id"`

@@ -21,6 +21,7 @@ type Deps struct {
 	JWT          *auth.JWTManager
 	UserRepo     *repositories.UserRepository
 	EmployeeRepo *repositories.EmployeeRepository
+	TenantRepo   *repositories.TenantRepository
 
 	AccessSvc      *services.AuthService
 	UserSvc        *services.UserService
@@ -34,12 +35,14 @@ type Deps struct {
 	SalarySvc      *services.SalaryService
 	PayrollSvc     *services.PayrollService
 	RecruitSvc     *services.RecruitmentService
+	GoogleFormSvc  *services.GoogleFormService
 	PerformanceSvc *services.PerformanceService
 	TrainingSvc    *services.TrainingService
 	DocumentSvc    *services.DocumentService
 	ReportSvc      *services.ReportService
 	AuditLogs      *repositories.AuditLogRepository
 	Notify         *notifications.Service
+	TenantSvc      *services.TenantService
 }
 
 func NewRouter(d Deps) *gin.Engine {
@@ -71,7 +74,11 @@ func NewRouter(d Deps) *gin.Engine {
 	api.POST("/auth/login", authHandler.Login)
 	api.POST("/auth/refresh", authHandler.Refresh)
 
-	protected := api.Group("", authMW, middleware.EmployeeScope(d.EmployeeRepo))
+	// --- Google OAuth callback (browser redirect; state-validated) ---
+	gfHandler := handlers.NewGoogleFormHandler(d.GoogleFormSvc)
+	api.GET("/integrations/google/oauth/callback", gfHandler.OAuthCallback)
+
+	protected := api.Group("", authMW, middleware.EmployeeScope(d.EmployeeRepo), middleware.TenantScope(d.TenantRepo, resolver, "platform:tenant-access"))
 	{
 		// --- Auth self-service (logged in) ---
 		authGroup := protected.Group("/auth")
@@ -182,6 +189,19 @@ func NewRouter(d Deps) *gin.Engine {
 		jobs.PUT("/:id", rbac("job:update"), recruitHandler.UpdateJob)
 		jobs.DELETE("/:id", rbac("job:delete"), recruitHandler.DeleteJob)
 
+		// --- Google Forms integration (recruitment) ---
+		jobs.POST("/:id/google-form/connect", rbac("googleform:connect"), gfHandler.Connect)
+		jobs.GET("/:id/google-form", rbac("googleform:read"), gfHandler.Get)
+		jobs.PUT("/:id/google-form", rbac("googleform:connect"), gfHandler.Update)
+		jobs.DELETE("/:id/google-form", rbac("googleform:connect"), gfHandler.Disconnect)
+		jobs.POST("/:id/google-form/sync", rbac("googleform:sync"), gfHandler.Sync)
+		jobs.GET("/:id/google-form/sync-status", rbac("googleform:read"), gfHandler.SyncStatus)
+		jobs.GET("/:id/google-form/responses", rbac("googleform:read"), gfHandler.Responses)
+
+		// --- Google OAuth (admin-only account linking) ---
+		oauth := protected.Group("/integrations/google/oauth")
+		oauth.POST("/authorize", rbac("googleform:connect"), gfHandler.OAuthAuthorize)
+
 		candidates := protected.Group("/recruitment/candidates")
 		candidates.GET("", rbac("candidate:read"), recruitHandler.ListCandidates)
 		candidates.POST("", rbac("candidate:create"), recruitHandler.CreateCandidate)
@@ -280,6 +300,33 @@ func NewRouter(d Deps) *gin.Engine {
 		auditHandler := handlers.NewAuditHandler(d.AuditLogs)
 		audit := protected.Group("/audit", rbac("audit:read"))
 		audit.GET("/logs", auditHandler.List)
+	}
+
+	// --- Platform admin / tenant management (platform operators only) ---
+	if d.TenantSvc != nil {
+		tenantHandler := handlers.NewTenantHandler(d.TenantSvc)
+		admin := api.Group("/admin", authMW)
+		{
+			admin.GET("/dashboard", rbac("platform:dashboard:read"), tenantHandler.Dashboard)
+
+			tenants := admin.Group("/tenants")
+			tenants.GET("", rbac("tenant:read"), tenantHandler.List)
+			tenants.POST("", rbac("tenant:create"), tenantHandler.Create)
+			tenants.GET("/:id", rbac("tenant:read"), tenantHandler.Get)
+			tenants.PUT("/:id", rbac("tenant:update"), tenantHandler.Update)
+			tenants.POST("/:id/activate", rbac("tenant:update"), tenantHandler.Activate)
+			tenants.POST("/:id/suspend", rbac("tenant:update"), tenantHandler.Suspend)
+			tenants.POST("/:id/owners", rbac("tenant:update"), tenantHandler.CreateOwner)
+
+			pUsers := admin.Group("/users")
+			pUsers.GET("", rbac("platform:user:read"), tenantHandler.PlatformUsers)
+			pUsers.POST("", rbac("platform:user:create"), tenantHandler.CreatePlatformUser)
+			pUsers.PUT("/:id", rbac("platform:user:update"), tenantHandler.UpdatePlatformUser)
+			pUsers.DELETE("/:id", rbac("platform:user:delete"), tenantHandler.DeletePlatformUser)
+		}
+
+		// --- Self-serve tenant registration (public, rate-limited) ---
+		api.POST("/public/tenants", tenantHandler.Register)
 	}
 
 	return r

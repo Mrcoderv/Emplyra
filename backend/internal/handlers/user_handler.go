@@ -65,7 +65,7 @@ func (h *UserHandler) Create(c *gin.Context) {
 		LastName:  sanitizeField(req.LastName),
 		RoleID:    req.RoleID,
 		Status:    req.Status,
-	}, actor.UserID, clientIP(c), userAgent(c))
+	}, actor.Scope, actor.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -91,7 +91,7 @@ func (h *UserHandler) Update(c *gin.Context) {
 		LastName:  sanitizeField(req.LastName),
 		RoleID:    req.RoleID,
 		Status:    req.Status,
-	}, actor.UserID, clientIP(c), userAgent(c))
+	}, actor.Scope, actor.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -142,7 +142,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		LastName  string
 		RoleID    string
 		Status    string
-	}{FirstName: sanitizeField(req.FirstName), LastName: sanitizeField(req.LastName)}, actor.UserID, clientIP(c), userAgent(c))
+	}{FirstName: sanitizeField(req.FirstName), LastName: sanitizeField(req.LastName)}, actor.Scope, actor.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return

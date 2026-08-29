@@ -15,6 +15,8 @@ type Claims struct {
 	Username string `json:"uname"`
 	Role     string `json:"role"`
 	RoleID   string `json:"rid"`
+	Scope    string `json:"scope"`
+	TenantID string `json:"tid"`
 	jwt.RegisteredClaims
 }
 
@@ -27,13 +29,15 @@ func NewJWTManager(secret string, ttl time.Duration) *JWTManager {
 	return &JWTManager{secret: []byte(secret), ttl: ttl}
 }
 
-func (m *JWTManager) Generate(userID, username, role, roleID string) (string, error) {
+func (m *JWTManager) Generate(userID, username, role, roleID, scope, tenantID string) (string, error) {
 	now := time.Now()
 	claims := Claims{
 		UserID:   userID,
 		Username: username,
 		Role:     role,
 		RoleID:   roleID,
+		Scope:    scope,
+		TenantID: tenantID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   userID,
 			IssuedAt:  jwt.NewNumericDate(now),

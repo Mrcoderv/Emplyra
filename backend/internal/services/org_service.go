@@ -16,27 +16,28 @@ func NewDepartmentService(repos *repositories.DepartmentRepository, emp *reposit
 	return &DepartmentService{repos: repos, emp: emp, audit: audit}
 }
 
-func (s *DepartmentService) validate(dept *models.Department) error {
-	if existing, _ := s.repos.FindByCode(dept.Code); existing != nil && existing.ID != dept.ID {
+func (s *DepartmentService) validate(tenantID string, dept *models.Department) error {
+	if existing, _ := s.repos.FindByCode(tenantID, dept.Code); existing != nil && existing.ID != dept.ID {
 		return ErrDuplicate
 	}
 	return nil
 }
 
-func (s *DepartmentService) List() ([]models.Department, error) {
-	return s.repos.List(nil)
+func (s *DepartmentService) List(tenantID string) ([]models.Department, error) {
+	return s.repos.List(tenantID, nil)
 }
 
-func (s *DepartmentService) Get(id string) (*models.Department, error) {
-	d, err := s.repos.FindByID(id)
+func (s *DepartmentService) Get(tenantID, id string) (*models.Department, error) {
+	d, err := s.repos.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return d, nil
 }
 
-func (s *DepartmentService) Create(in struct{ Name, Code, Description, ManagerID, Status string }, actorID, ip, ua string) (*models.Department, error) {
+func (s *DepartmentService) Create(tenantID string, in struct{ Name, Code, Description, ManagerID, Status string }, actorID, ip, ua string) (*models.Department, error) {
 	dept := &models.Department{
+		TenantID:    tenantID,
 		Name:        in.Name,
 		Code:        in.Code,
 		Description: in.Description,
@@ -46,7 +47,7 @@ func (s *DepartmentService) Create(in struct{ Name, Code, Description, ManagerID
 	if dept.Status == "" {
 		dept.Status = models.OrgStatusActive
 	}
-	if err := s.validate(dept); err != nil {
+	if err := s.validate(tenantID, dept); err != nil {
 		return nil, err
 	}
 	if err := s.repos.Create(dept); err != nil {
@@ -56,8 +57,8 @@ func (s *DepartmentService) Create(in struct{ Name, Code, Description, ManagerID
 	return dept, nil
 }
 
-func (s *DepartmentService) Update(id string, in struct{ Name, Code, Description, ManagerID, Status string }, actorID, ip, ua string) (*models.Department, error) {
-	existing, err := s.repos.FindByID(id)
+func (s *DepartmentService) Update(tenantID, id string, in struct{ Name, Code, Description, ManagerID, Status string }, actorID, ip, ua string) (*models.Department, error) {
+	existing, err := s.repos.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -78,25 +79,25 @@ func (s *DepartmentService) Update(id string, in struct{ Name, Code, Description
 		fields["status"] = in.Status
 	}
 	if code, ok := fields["code"]; ok {
-		if dup, _ := s.repos.FindByCode(code.(string)); dup != nil && dup.ID != id {
+		if dup, _ := s.repos.FindByCode(tenantID, code.(string)); dup != nil && dup.ID != id {
 			return nil, ErrDuplicate
 		}
 	}
 	if len(fields) == 0 {
 		return existing, nil
 	}
-	if err := s.repos.Update(id, fields); err != nil {
+	if err := s.repos.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "department", id, ip, ua, nil)
-	return s.repos.FindByID(id)
+	return s.repos.FindByID(tenantID, id)
 }
 
-func (s *DepartmentService) Delete(id, actorID, ip, ua string) error {
-	if _, err := s.repos.FindByID(id); err != nil {
+func (s *DepartmentService) Delete(tenantID, id, actorID, ip, ua string) error {
+	if _, err := s.repos.FindByID(tenantID, id); err != nil {
 		return ErrNotFound
 	}
-	if err := s.repos.Delete(id); err != nil {
+	if err := s.repos.Delete(tenantID, id); err != nil {
 		return err
 	}
 	s.audit.Record(actorID, models.ActionDelete, "department", id, ip, ua, nil)
@@ -112,23 +113,24 @@ func NewDesignationService(repos *repositories.DesignationRepository, audit *aud
 	return &DesignationService{repos: repos, audit: audit}
 }
 
-func (s *DesignationService) List() ([]models.Designation, error) {
-	return s.repos.List()
+func (s *DesignationService) List(tenantID string) ([]models.Designation, error) {
+	return s.repos.List(tenantID)
 }
 
-func (s *DesignationService) Get(id string) (*models.Designation, error) {
-	d, err := s.repos.FindByID(id)
+func (s *DesignationService) Get(tenantID, id string) (*models.Designation, error) {
+	d, err := s.repos.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return d, nil
 }
 
-func (s *DesignationService) Create(in struct {
+func (s *DesignationService) Create(tenantID string, in struct {
 	Name, Description, DepartmentID, Status string
 	Level                                   int
 }, actorID, ip, ua string) (*models.Designation, error) {
 	d := &models.Designation{
+		TenantID:     tenantID,
 		Name:         in.Name,
 		Description:  in.Description,
 		DepartmentID: stringPtr(in.DepartmentID),
@@ -148,11 +150,11 @@ func (s *DesignationService) Create(in struct {
 	return d, nil
 }
 
-func (s *DesignationService) Update(id string, in struct {
+func (s *DesignationService) Update(tenantID, id string, in struct {
 	Name, Description, DepartmentID, Status string
 	Level                                   int
 }, actorID, ip, ua string) (*models.Designation, error) {
-	if _, err := s.repos.FindByID(id); err != nil {
+	if _, err := s.repos.FindByID(tenantID, id); err != nil {
 		return nil, ErrNotFound
 	}
 	fields := map[string]interface{}{}
@@ -171,18 +173,18 @@ func (s *DesignationService) Update(id string, in struct {
 	if in.Status != "" {
 		fields["status"] = in.Status
 	}
-	if err := s.repos.Update(id, fields); err != nil {
+	if err := s.repos.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "designation", id, ip, ua, nil)
-	return s.repos.FindByID(id)
+	return s.repos.FindByID(tenantID, id)
 }
 
-func (s *DesignationService) Delete(id, actorID, ip, ua string) error {
-	if _, err := s.repos.FindByID(id); err != nil {
+func (s *DesignationService) Delete(tenantID, id, actorID, ip, ua string) error {
+	if _, err := s.repos.FindByID(tenantID, id); err != nil {
 		return ErrNotFound
 	}
-	if err := s.repos.Delete(id); err != nil {
+	if err := s.repos.Delete(tenantID, id); err != nil {
 		return err
 	}
 	s.audit.Record(actorID, models.ActionDelete, "designation", id, ip, ua, nil)

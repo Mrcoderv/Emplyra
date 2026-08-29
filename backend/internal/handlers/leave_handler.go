@@ -40,7 +40,7 @@ func (h *LeaveHandler) Create(c *gin.Context) {
 		responses.Error(c, 403, "forbidden", nil)
 		return
 	}
-	l, err := h.svc.Create(employeeID, req.LeaveTypeID, req.StartDate, req.EndDate, req.Reason, p.UserID, clientIP(c), userAgent(c))
+	l, err := h.svc.Create(middleware.TenantID(c), employeeID, req.LeaveTypeID, req.StartDate, req.EndDate, req.Reason, p.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -72,7 +72,7 @@ func (h *LeaveHandler) List(c *gin.Context) {
 		filter.EmployeeID = empID
 	}
 	pg := utils.NewPagination(params.Page, params.PageSize)
-	items, total, err := h.svc.List(pg, filter)
+	items, total, err := h.svc.List(middleware.TenantID(c), pg, filter)
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -81,7 +81,7 @@ func (h *LeaveHandler) List(c *gin.Context) {
 }
 
 func (h *LeaveHandler) Get(c *gin.Context) {
-	l, err := h.svc.Get(c.Param("id"))
+	l, err := h.svc.Get(middleware.TenantID(c), c.Param("id"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -100,7 +100,7 @@ func (h *LeaveHandler) Approve(c *gin.Context) {
 	var req dto.LeaveDecisionRequest
 	_ = c.ShouldBindJSON(&req)
 	p := middleware.MustPrincipal(c)
-	l, err := h.svc.Approve(c.Param("id"), req.Note, p.UserID, clientIP(c), userAgent(c))
+	l, err := h.svc.Approve(middleware.TenantID(c), c.Param("id"), req.Note, p.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -112,7 +112,7 @@ func (h *LeaveHandler) Reject(c *gin.Context) {
 	var req dto.LeaveDecisionRequest
 	_ = c.ShouldBindJSON(&req)
 	p := middleware.MustPrincipal(c)
-	l, err := h.svc.Reject(c.Param("id"), req.Note, p.UserID, clientIP(c), userAgent(c))
+	l, err := h.svc.Reject(middleware.TenantID(c), c.Param("id"), req.Note, p.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -121,7 +121,7 @@ func (h *LeaveHandler) Reject(c *gin.Context) {
 }
 
 func (h *LeaveHandler) Types(c *gin.Context) {
-	items, err := h.svc.LeaveTypes()
+	items, err := h.svc.LeaveTypes(middleware.TenantID(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -141,7 +141,7 @@ func (h *LeaveHandler) SetBalance(c *gin.Context) {
 		return
 	}
 	p := middleware.MustPrincipal(c)
-	bal, err := h.svc.SetBalance(req.EmployeeID, req.LeaveTypeID, req.Year, req.Entitlement, p.UserID, clientIP(c), userAgent(c))
+	bal, err := h.svc.SetBalance(middleware.TenantID(c), req.EmployeeID, req.LeaveTypeID, req.Year, req.Entitlement, p.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -161,7 +161,7 @@ func (h *LeaveHandler) Balances(c *gin.Context) {
 			return
 		}
 	}
-	items, err := h.svc.Balances(employeeID, year)
+	items, err := h.svc.Balances(middleware.TenantID(c), employeeID, year)
 	if err != nil {
 		mapServiceError(c, err)
 		return

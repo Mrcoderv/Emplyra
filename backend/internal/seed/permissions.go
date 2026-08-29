@@ -88,6 +88,10 @@ var catalog = []permissionDef{
 	{"onboarding:read", "onboarding", "Read onboarding"},
 	{"onboarding:update", "onboarding", "Update onboarding"},
 
+	{"googleform:read", "recruitment", "Read Google Form integrations"},
+	{"googleform:connect", "recruitment", "Connect/configure Google Form integrations"},
+	{"googleform:sync", "recruitment", "Synchronize Google Form responses"},
+
 	{"goal:create", "performance", "Create goals"},
 	{"goal:read", "performance", "Read goals"},
 	{"goal:update", "performance", "Update goals"},
@@ -122,6 +126,17 @@ var catalog = []permissionDef{
 	{"report:read", "report", "Read reports"},
 	{"dashboard:read", "dashboard", "Read dashboard"},
 	{"audit:read", "audit", "Read audit logs"},
+
+	{"tenant:read", "tenant", "Read tenant accounts and usage"},
+	{"tenant:create", "tenant", "Create tenant accounts"},
+	{"tenant:update", "tenant", "Update tenant accounts"},
+	{"tenant:delete", "tenant", "Delete tenant accounts"},
+	{"platform:user:read", "platform", "Read platform users"},
+	{"platform:user:create", "platform", "Create platform users"},
+	{"platform:user:update", "platform", "Update platform users"},
+	{"platform:user:delete", "platform", "Delete platform users"},
+	{"platform:dashboard:read", "platform", "Read platform dashboard"},
+	{"platform:tenant-access", "platform", "Open a tenant in support mode"},
 }
 
 func permissionsCatalog() []models.Permission {
@@ -158,6 +173,25 @@ func PermissionByName() map[string]string {
 func RolePermissions() map[models.RoleName][]string {
 	return map[models.RoleName][]string{
 		models.RoleSuperAdmin: AllPermissionNames(),
+		models.RolePlatformOwner: {
+			"tenant:read", "tenant:create", "tenant:update", "tenant:delete",
+			"platform:user:read", "platform:user:create", "platform:user:update", "platform:user:delete",
+			"platform:dashboard:read", "platform:tenant-access",
+			"audit:read",
+		},
+		models.RolePlatformAdmin: {
+			"tenant:read", "tenant:create", "tenant:update",
+			"platform:user:read", "platform:user:create", "platform:user:update",
+			"platform:dashboard:read", "platform:tenant-access",
+			"audit:read",
+		},
+		models.RolePlatformSupport: {
+			"tenant:read", "tenant:update",
+			"platform:dashboard:read", "platform:tenant-access",
+		},
+		models.RolePlatformAuditor: {
+			"tenant:read", "platform:dashboard:read", "audit:read",
+		},
 		models.RoleHRAdmin: {
 			"user:create", "user:read", "user:update", "role:read", "role:assign",
 			"employee:create", "employee:read", "employee:update", "employee:delete",
@@ -173,6 +207,7 @@ func RolePermissions() map[models.RoleName][]string {
 			"application:create", "application:read", "application:update",
 			"interview:create", "interview:read", "interview:update",
 			"onboarding:create", "onboarding:read", "onboarding:update",
+			"googleform:read", "googleform:connect", "googleform:sync",
 			"goal:create", "goal:read", "goal:update", "goal:delete",
 			"kpi:create", "kpi:read", "kpi:update", "kpi:delete",
 			"review:create", "review:read", "review:update",
@@ -216,6 +251,7 @@ func RolePermissions() map[models.RoleName][]string {
 			"application:create", "application:read", "application:update",
 			"interview:create", "interview:read", "interview:update",
 			"onboarding:create", "onboarding:read", "onboarding:update",
+			"googleform:read", "googleform:connect", "googleform:sync",
 			"training:read",
 			"document:create", "document:read",
 			"notification:read", "notification:update",

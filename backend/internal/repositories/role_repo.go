@@ -38,6 +38,13 @@ func (r *RoleRepository) List() ([]models.Role, error) {
 	return roles, err
 }
 
+// ListByScope returns only roles anchored to the given scope (e.g. tenant).
+func (r *RoleRepository) ListByScope(scope string) ([]models.Role, error) {
+	var roles []models.Role
+	err := r.db.Preload("Permissions").Where("scope = ?", scope).Order("name ASC").Find(&roles).Error
+	return roles, err
+}
+
 func (r *RoleRepository) Create(role *models.Role, permissionIDs []string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(role).Error; err != nil {

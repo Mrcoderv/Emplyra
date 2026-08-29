@@ -50,12 +50,16 @@ func seedPermissionsAndRoles(tx *gorm.DB) error {
 		var role models.Role
 		err := tx.Where("name = ?", string(roleName)).First(&role).Error
 		if err == gorm.ErrRecordNotFound {
-			role = models.Role{Name: string(roleName), IsSystem: true}
+			role = models.Role{Name: string(roleName), IsSystem: true, Scope: roleScope(roleName)}
 			if err := tx.Create(&role).Error; err != nil {
 				return err
 			}
 		} else if err != nil {
 			return err
+		} else if role.IsSystem && role.Scope != roleScope(roleName) {
+			if err := tx.Model(&role).Update("scope", roleScope(roleName)).Error; err != nil {
+				return err
+			}
 		}
 
 		var perms []models.Permission
@@ -67,6 +71,16 @@ func seedPermissionsAndRoles(tx *gorm.DB) error {
 		}
 	}
 	return nil
+}
+
+// roleScope returns the scope system roles are anchored to.
+func roleScope(role models.RoleName) string {
+	switch role {
+	case models.RolePlatformOwner, models.RolePlatformAdmin, models.RolePlatformSupport, models.RolePlatformAuditor, models.RoleSuperAdmin:
+		return models.RoleScopePlatform
+	default:
+		return models.RoleScopeTenant
+	}
 }
 
 func seedSuperAdmin(db *gorm.DB, cfg *config.Config) error {

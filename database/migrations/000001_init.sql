@@ -242,6 +242,11 @@ CREATE TABLE IF NOT EXISTS candidates (
     source varchar(100) NOT NULL DEFAULT '',
     status varchar(20) NOT NULL DEFAULT 'NEW',
     notes varchar(2000) NOT NULL DEFAULT '',
+    address varchar(500) NOT NULL DEFAULT '',
+    date_of_birth varchar(40) NOT NULL DEFAULT '',
+    education varchar(500) NOT NULL DEFAULT '',
+    experience varchar(500) NOT NULL DEFAULT '',
+    skills varchar(1000) NOT NULL DEFAULT '',
     deleted_at timestamptz,
     created_at timestamptz NOT NULL,
     updated_at timestamptz NOT NULL
@@ -406,3 +411,65 @@ CREATE INDEX IF NOT EXISTS idx_payrolls_employee_month ON payrolls(employee_id, 
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, is_read);
+
+-- Google Forms integration (upgrade path: existing candidate tables get the
+-- new profile columns added on top of the CREATE TABLE above).
+ALTER TABLE candidates ADD COLUMN IF NOT EXISTS address varchar(500) NOT NULL DEFAULT '';
+ALTER TABLE candidates ADD COLUMN IF NOT EXISTS date_of_birth varchar(40) NOT NULL DEFAULT '';
+ALTER TABLE candidates ADD COLUMN IF NOT EXISTS education varchar(500) NOT NULL DEFAULT '';
+ALTER TABLE candidates ADD COLUMN IF NOT EXISTS experience varchar(500) NOT NULL DEFAULT '';
+ALTER TABLE candidates ADD COLUMN IF NOT EXISTS skills varchar(1000) NOT NULL DEFAULT '';
+
+CREATE TABLE IF NOT EXISTS google_form_integrations (
+    id uuid PRIMARY KEY,
+    job_id uuid NOT NULL UNIQUE REFERENCES job_posts(id) ON DELETE CASCADE,
+    provider varchar(40) NOT NULL DEFAULT 'google_forms',
+    form_url varchar(500) NOT NULL DEFAULT '',
+    spreadsheet_id varchar(200) NOT NULL DEFAULT '',
+    response_sheet_name varchar(200) NOT NULL DEFAULT '',
+    header_row integer NOT NULL DEFAULT 1,
+    field_mapping jsonb,
+    status varchar(20) NOT NULL DEFAULT 'PENDING',
+    last_synced_at timestamptz,
+    synced_rows integer NOT NULL DEFAULT 0,
+    sync_error varchar(1000) NOT NULL DEFAULT '',
+    status_detail varchar(255) NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL,
+    updated_at timestamptz NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS google_form_responses (
+    id uuid PRIMARY KEY,
+    integration_id uuid NOT NULL REFERENCES google_form_integrations(id) ON DELETE CASCADE,
+    external_response_id varchar(255) NOT NULL,
+    candidate_id uuid REFERENCES candidates(id),
+    application_id uuid REFERENCES applications(id),
+    raw_response jsonb,
+    submitted_at timestamptz,
+    imported_at timestamptz,
+    status varchar(20) NOT NULL DEFAULT 'IMPORTED',
+    error_message varchar(1000) NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL,
+    updated_at timestamptz NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_google_form_responses_external
+    ON google_form_responses(external_response_id);
+CREATE INDEX IF NOT EXISTS idx_google_form_responses_integration
+    ON google_form_responses(integration_id);
+CREATE INDEX IF NOT EXISTS idx_google_form_responses_candidate
+    ON google_form_responses(candidate_id);
+CREATE INDEX IF NOT EXISTS idx_google_form_responses_status
+    ON google_form_responses(status);
+
+CREATE TABLE IF NOT EXISTS google_oauth_tokens (
+    id uuid PRIMARY KEY,
+    key varchar(64) NOT NULL,
+    data text NOT NULL DEFAULT '',
+    expires_at timestamptz,
+    created_at timestamptz NOT NULL,
+    updated_at timestamptz NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_google_oauth_tokens_key ON google_oauth_tokens(key);
+CREATE INDEX IF NOT EXISTS idx_google_oauth_tokens_expires ON google_oauth_tokens(expires_at);

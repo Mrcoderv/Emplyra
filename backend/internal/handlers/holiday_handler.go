@@ -19,7 +19,7 @@ func NewHolidayHandler(svc *services.HolidayService) *HolidayHandler {
 }
 
 func (h *HolidayHandler) List(c *gin.Context) {
-	items, err := h.svc.List(c.Query("from"), c.Query("to"), c.Query("status"))
+	items, err := h.svc.List(middleware.TenantID(c), c.Query("from"), c.Query("to"), c.Query("status"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -28,7 +28,7 @@ func (h *HolidayHandler) List(c *gin.Context) {
 }
 
 func (h *HolidayHandler) Get(c *gin.Context) {
-	item, err := h.svc.Get(c.Param("id"))
+	item, err := h.svc.Get(middleware.TenantID(c), c.Param("id"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -43,7 +43,7 @@ func (h *HolidayHandler) Create(c *gin.Context) {
 		return
 	}
 	actor := middleware.MustPrincipal(c)
-	item, err := h.svc.Create(struct{ Name, Date, Description, Type, Status string }{
+	item, err := h.svc.Create(middleware.TenantID(c), struct{ Name, Date, Description, Type, Status string }{
 		Name: sanitizeField(req.Name), Date: req.Date, Description: req.Description, Type: req.Type, Status: req.Status,
 	}, actor.UserID, clientIP(c), userAgent(c))
 	if err != nil {
@@ -60,7 +60,7 @@ func (h *HolidayHandler) Update(c *gin.Context) {
 		return
 	}
 	actor := middleware.MustPrincipal(c)
-	item, err := h.svc.Update(c.Param("id"), struct{ Name, Date, Description, Type, Status string }{
+	item, err := h.svc.Update(middleware.TenantID(c), c.Param("id"), struct{ Name, Date, Description, Type, Status string }{
 		Name: sanitizeField(req.Name), Date: req.Date, Description: req.Description, Type: req.Type, Status: req.Status,
 	}, actor.UserID, clientIP(c), userAgent(c))
 	if err != nil {
@@ -72,7 +72,7 @@ func (h *HolidayHandler) Update(c *gin.Context) {
 
 func (h *HolidayHandler) Delete(c *gin.Context) {
 	actor := middleware.MustPrincipal(c)
-	if err := h.svc.Delete(c.Param("id"), actor.UserID, clientIP(c), userAgent(c)); err != nil {
+	if err := h.svc.Delete(middleware.TenantID(c), c.Param("id"), actor.UserID, clientIP(c), userAgent(c)); err != nil {
 		mapServiceError(c, err)
 		return
 	}

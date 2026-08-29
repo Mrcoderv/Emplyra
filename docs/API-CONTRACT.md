@@ -143,6 +143,26 @@ Money fields are strings with 2 decimals (`"6750.50"`) — never floats.
 | PUT | `/recruitment/onboarding/:id` | onboarding:update |
 | POST | `/recruitment/onboarding/hire` | onboarding:create (hires candidate → employee) |
 
+### Recruitment ↔ Google Forms
+
+| Method | Path | Permission |
+|--------|------|-----------|
+| POST | `/recruitment/jobs/:id/google-form/connect` | googleform:connect (body: form_url, sheet_id, sheet_name, header_row, field_mapping) |
+| GET | `/recruitment/jobs/:id/google-form` | googleform:read |
+| PUT | `/recruitment/jobs/:id/google-form` | googleform:connect (update form/sheet/mapping) |
+| DELETE | `/recruitment/jobs/:id/google-form` | googleform:connect |
+| POST | `/recruitment/jobs/:id/google-form/sync` | googleform:sync (body: `{"mode":"incremental"\|"full"}`) |
+| GET | `/recruitment/jobs/:id/google-form/sync-status` | googleform:read |
+| GET | `/recruitment/jobs/:id/google-form/responses` | googleform:read (import ledger + pagination) |
+| POST | `/integrations/google/oauth/authorize` | googleform:connect (returns consent URL) |
+| GET | `/integrations/google/oauth/callback` | public (state-validated OAuth redirect, returns tokens to HRMS) |
+
+Sync response data:
+
+```json
+{ "imported": 12, "duplicates": 1, "failed": 0, "total_rows": 13 }
+```
+
 ## Performance
 
 | Method | Path | Permission |
@@ -209,8 +229,23 @@ Money fields are strings with 2 decimals (`"6750.50"`) — never floats.
 | Role | Scope |
 |------|-------|
 | SUPER_ADMIN | every permission |
-| HR_ADMIN | user/employee/org/time-off/payroll/recruitment/performance/training/docs/reports/audit |
+| HR_ADMIN | user/employee/org/time-off/payroll/recruitment/performance/training/docs/reports/audit + googleform:connect/sync/read |
 | MANAGER | read-most; approve leaves; manage direct reports' goals/KPIs/reviews; respond to leave requests |
-| RECRUITER | all recruitment actions + training read + reports |
+| RECRUITER | all recruitment actions + training read + reports + googleform:read/sync |
 | ACCOUNTANT | salary/payroll + attendance read + reports |
-| EMPLOYEE | own-scope: attendance, leave apply, goals (read/update own), self review, enrollment, documents, notifications, dashboard |
+| EMPLOYEE | own-scope: attendance, leave apply, goals (read/update own), self review, enrollment, documents, notifications, dashboard + googleform:read |
+
+## Google Forms integration env (backend/.env)
+
+Refer to `docs/GOOGLE-FORMS-INTEGRATION-MAP.md` for the full integration contract.
+Environment variables consumed at startup (see `google.ConfigFromEnv` in `internal/google/oauth.go`):
+
+```
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+GOOGLE_PROJECT_ID
+GOOGLE_REDIRECT_URL
+GOOGLE_REFRESH_TOKEN
+GOOGLE_TOKEN_ENCRYPTION_KEY   (falls back to JWT_SECRET)
+GOOGLE_OAUTH_SUCCESS_REDIRECT
+```

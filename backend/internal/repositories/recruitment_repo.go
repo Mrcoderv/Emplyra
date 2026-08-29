@@ -19,27 +19,27 @@ func NewJobPostRepository(db *gorm.DB) *JobPostRepository {
 
 func (r *JobPostRepository) Create(j *models.JobPost) error { return r.db.Create(j).Error }
 
-func (r *JobPostRepository) Update(id string, fields map[string]interface{}) error {
-	return r.db.Model(&models.JobPost{}).Where("id = ?", id).Updates(fields).Error
+func (r *JobPostRepository) Update(tenantID, id string, fields map[string]interface{}) error {
+	return r.db.Model(&models.JobPost{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(fields).Error
 }
 
-func (r *JobPostRepository) Delete(id string) error {
-	return r.db.Delete(&models.JobPost{}, "id = ?", id).Error
+func (r *JobPostRepository) Delete(tenantID, id string) error {
+	return r.db.Scopes(TenantScope(tenantID)).Delete(&models.JobPost{}, "id = ?", id).Error
 }
 
-func (r *JobPostRepository) FindByID(id string) (*models.JobPost, error) {
+func (r *JobPostRepository) FindByID(tenantID, id string) (*models.JobPost, error) {
 	var j models.JobPost
-	err := r.db.Preload("Department").Preload("PostedByUser").First(&j, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Department").Preload("PostedByUser").First(&j, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &j, nil
 }
 
-func (r *JobPostRepository) List(p utils.Pagination, departmentID, status string, search string) ([]models.JobPost, int64, error) {
+func (r *JobPostRepository) List(tenantID string, p utils.Pagination, departmentID, status string, search string) ([]models.JobPost, int64, error) {
 	var items []models.JobPost
 	var total int64
-	q := r.db.Model(&models.JobPost{})
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.JobPost{})
 	if departmentID != "" {
 		q = q.Where("department_id = ?", departmentID)
 	}
@@ -67,36 +67,36 @@ func NewCandidateRepository(db *gorm.DB) *CandidateRepository {
 
 func (r *CandidateRepository) Create(c *models.Candidate) error { return r.db.Create(c).Error }
 
-func (r *CandidateRepository) Update(id string, fields map[string]interface{}) error {
-	return r.db.Model(&models.Candidate{}).Where("id = ?", id).Updates(fields).Error
+func (r *CandidateRepository) Update(tenantID, id string, fields map[string]interface{}) error {
+	return r.db.Model(&models.Candidate{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(fields).Error
 }
 
-func (r *CandidateRepository) Delete(id string) error {
-	return r.db.Delete(&models.Candidate{}, "id = ?", id).Error
+func (r *CandidateRepository) Delete(tenantID, id string) error {
+	return r.db.Scopes(TenantScope(tenantID)).Delete(&models.Candidate{}, "id = ?", id).Error
 }
 
-func (r *CandidateRepository) FindByID(id string) (*models.Candidate, error) {
+func (r *CandidateRepository) FindByID(tenantID, id string) (*models.Candidate, error) {
 	var c models.Candidate
-	err := r.db.First(&c, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).First(&c, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &c, nil
 }
 
-func (r *CandidateRepository) FindByEmail(email string) (*models.Candidate, error) {
+func (r *CandidateRepository) FindByEmail(tenantID, email string) (*models.Candidate, error) {
 	var c models.Candidate
-	err := r.db.Where("LOWER(email) = LOWER(?)", email).First(&c).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Where("LOWER(email) = LOWER(?)", email).First(&c).Error
 	if err != nil {
 		return nil, err
 	}
 	return &c, nil
 }
 
-func (r *CandidateRepository) List(p utils.Pagination, status, search string) ([]models.Candidate, int64, error) {
+func (r *CandidateRepository) List(tenantID string, p utils.Pagination, status, search string) ([]models.Candidate, int64, error) {
 	var items []models.Candidate
 	var total int64
-	q := r.db.Model(&models.Candidate{})
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.Candidate{})
 	if status != "" {
 		q = q.Where("status = ?", status)
 	}
@@ -111,9 +111,9 @@ func (r *CandidateRepository) List(p utils.Pagination, status, search string) ([
 	return items, total, err
 }
 
-func (r *CandidateRepository) AlreadyEmployeeEmail(email string) bool {
+func (r *CandidateRepository) AlreadyEmployeeEmail(tenantID, email string) bool {
 	var n int64
-	r.db.Model(&models.Employee{}).Where("LOWER(email) = LOWER(?)", email).Count(&n)
+	r.db.Scopes(TenantScope(tenantID)).Model(&models.Employee{}).Where("LOWER(email) = LOWER(?)", email).Count(&n)
 	return n > 0
 }
 
@@ -127,30 +127,30 @@ func NewApplicationRepository(db *gorm.DB) *ApplicationRepository {
 
 func (r *ApplicationRepository) Create(a *models.Application) error { return r.db.Create(a).Error }
 
-func (r *ApplicationRepository) Update(id string, fields map[string]interface{}) error {
-	return r.db.Model(&models.Application{}).Where("id = ?", id).Updates(fields).Error
+func (r *ApplicationRepository) Update(tenantID, id string, fields map[string]interface{}) error {
+	return r.db.Model(&models.Application{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(fields).Error
 }
 
-func (r *ApplicationRepository) FindByID(id string) (*models.Application, error) {
+func (r *ApplicationRepository) FindByID(tenantID, id string) (*models.Application, error) {
 	var a models.Application
-	err := r.db.Preload("JobPost").Preload("Candidate").Preload("Reviewer").First(&a, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("JobPost").Preload("Candidate").Preload("Reviewer").First(&a, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &a, nil
 }
 
-func (r *ApplicationRepository) Exists(candidateID, jobPostID string) (bool, error) {
+func (r *ApplicationRepository) Exists(tenantID, candidateID, jobPostID string) (bool, error) {
 	var n int64
-	err := r.db.Model(&models.Application{}).
+	err := r.db.Scopes(TenantScope(tenantID)).Model(&models.Application{}).
 		Where("candidate_id = ? AND job_post_id = ?", candidateID, jobPostID).Count(&n).Error
 	return n > 0, err
 }
 
-func (r *ApplicationRepository) List(p utils.Pagination, jobID, candidateID, status string) ([]models.Application, int64, error) {
+func (r *ApplicationRepository) List(tenantID string, p utils.Pagination, jobID, candidateID, status string) ([]models.Application, int64, error) {
 	var items []models.Application
 	var total int64
-	q := r.db.Model(&models.Application{})
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.Application{})
 	if jobID != "" {
 		q = q.Where("job_post_id = ?", jobID)
 	}
@@ -177,23 +177,23 @@ func NewInterviewRepository(db *gorm.DB) *InterviewRepository {
 
 func (r *InterviewRepository) Create(i *models.Interview) error { return r.db.Create(i).Error }
 
-func (r *InterviewRepository) Update(id string, fields map[string]interface{}) error {
-	return r.db.Model(&models.Interview{}).Where("id = ?", id).Updates(fields).Error
+func (r *InterviewRepository) Update(tenantID, id string, fields map[string]interface{}) error {
+	return r.db.Model(&models.Interview{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(fields).Error
 }
 
-func (r *InterviewRepository) FindByID(id string) (*models.Interview, error) {
+func (r *InterviewRepository) FindByID(tenantID, id string) (*models.Interview, error) {
 	var i models.Interview
-	err := r.db.Preload("Application.Candidate").Preload("Application.JobPost").Preload("Interviewer").First(&i, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Application.Candidate").Preload("Application.JobPost").Preload("Interviewer").First(&i, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &i, nil
 }
 
-func (r *InterviewRepository) List(p utils.Pagination, applicationID, interviewerID, status string, from, to *time.Time) ([]models.Interview, int64, error) {
+func (r *InterviewRepository) List(tenantID string, p utils.Pagination, applicationID, interviewerID, status string, from, to *time.Time) ([]models.Interview, int64, error) {
 	var items []models.Interview
 	var total int64
-	q := r.db.Model(&models.Interview{})
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.Interview{})
 	if applicationID != "" {
 		q = q.Where("application_id = ?", applicationID)
 	}
@@ -226,23 +226,23 @@ func NewOnboardingRepository(db *gorm.DB) *OnboardingRepository {
 
 func (r *OnboardingRepository) Create(o *models.Onboarding) error { return r.db.Create(o).Error }
 
-func (r *OnboardingRepository) Update(id string, fields map[string]interface{}) error {
-	return r.db.Model(&models.Onboarding{}).Where("id = ?", id).Updates(fields).Error
+func (r *OnboardingRepository) Update(tenantID, id string, fields map[string]interface{}) error {
+	return r.db.Model(&models.Onboarding{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(fields).Error
 }
 
-func (r *OnboardingRepository) FindByID(id string) (*models.Onboarding, error) {
+func (r *OnboardingRepository) FindByID(tenantID, id string) (*models.Onboarding, error) {
 	var o models.Onboarding
-	err := r.db.Preload("Employee").Preload("Candidate").First(&o, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Employee").Preload("Candidate").First(&o, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &o, nil
 }
 
-func (r *OnboardingRepository) List(p utils.Pagination, employeeID, status string) ([]models.Onboarding, int64, error) {
+func (r *OnboardingRepository) List(tenantID string, p utils.Pagination, employeeID, status string) ([]models.Onboarding, int64, error) {
 	var items []models.Onboarding
 	var total int64
-	q := r.db.Model(&models.Onboarding{})
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.Onboarding{})
 	if employeeID != "" {
 		q = q.Where("employee_id = ?", employeeID)
 	}

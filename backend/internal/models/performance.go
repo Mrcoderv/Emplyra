@@ -17,6 +17,7 @@ const (
 
 type Goal struct {
 	BaseModel
+	TenantID    string          `gorm:"type:uuid;not null;index;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	EmployeeID  string          `gorm:"type:uuid;not null;index" json:"employee_id"`
 	Employee    *Employee       `gorm:"foreignKey:EmployeeID" json:"employee,omitempty"`
 	Title       string          `gorm:"size:200;not null" json:"title"`
@@ -28,6 +29,7 @@ type Goal struct {
 
 type KPI struct {
 	BaseModel
+	TenantID    string    `gorm:"type:uuid;not null;index;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	EmployeeID  string    `gorm:"type:uuid;not null;index" json:"employee_id"`
 	Employee    *Employee `gorm:"foreignKey:EmployeeID" json:"employee,omitempty"`
 	Name        string    `gorm:"size:200;not null" json:"name"`
@@ -51,6 +53,7 @@ const (
 
 type PerformanceReview struct {
 	BaseModel
+	TenantID        string          `gorm:"type:uuid;not null;index;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	EmployeeID      string          `gorm:"type:uuid;not null;index" json:"employee_id"`
 	Employee        *Employee       `gorm:"foreignKey:EmployeeID" json:"employee,omitempty"`
 	ReviewerID      *string         `gorm:"type:uuid;index" json:"reviewer_id"`

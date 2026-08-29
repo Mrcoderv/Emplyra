@@ -47,7 +47,7 @@ func (h *DocumentHandler) Upload(c *gin.Context) {
 		responses.Error(c, 400, "file is required", nil)
 		return
 	}
-	doc, err := h.svc.Upload(employeeID, title, c.PostForm("type"), uploadedBy, fh)
+	doc, err := h.svc.Upload(middleware.TenantID(c), employeeID, title, c.PostForm("type"), uploadedBy, fh)
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -64,7 +64,7 @@ func (h *DocumentHandler) List(c *gin.Context) {
 			employeeID = emp.ID
 		}
 	}
-	items, total, err := h.svc.List(p, employeeID, c.Query("type"), c.Query("status"))
+	items, total, err := h.svc.List(middleware.TenantID(c), p, employeeID, c.Query("type"), c.Query("status"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -73,7 +73,7 @@ func (h *DocumentHandler) List(c *gin.Context) {
 }
 
 func (h *DocumentHandler) Get(c *gin.Context) {
-	d, err := h.svc.Get(c.Param("id"))
+	d, err := h.svc.Get(middleware.TenantID(c), c.Param("id"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -82,7 +82,7 @@ func (h *DocumentHandler) Get(c *gin.Context) {
 }
 
 func (h *DocumentHandler) Download(c *gin.Context) {
-	path, _, err := h.svc.DownloadPath(c.Param("id"))
+	path, _, err := h.svc.DownloadPath(middleware.TenantID(c), c.Param("id"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -96,7 +96,7 @@ func (h *DocumentHandler) Download(c *gin.Context) {
 
 func (h *DocumentHandler) Delete(c *gin.Context) {
 	p := middleware.MustPrincipal(c)
-	if err := h.svc.Delete(c.Param("id"), utils.CloneString(p.UserID)); err != nil {
+	if err := h.svc.Delete(middleware.TenantID(c), c.Param("id"), utils.CloneString(p.UserID)); err != nil {
 		mapServiceError(c, err)
 		return
 	}

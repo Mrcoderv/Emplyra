@@ -17,6 +17,8 @@ type Principal struct {
 	Username string `json:"username"`
 	Role     string `json:"role"`
 	RoleID   string `json:"role_id"`
+	Scope    string `json:"scope"`
+	TenantID string `json:"tenant_id"`
 }
 
 func Auth(jwt *auth.JWTManager) gin.HandlerFunc {
@@ -37,6 +39,8 @@ func Auth(jwt *auth.JWTManager) gin.HandlerFunc {
 			Username: claims.Username,
 			Role:     claims.Role,
 			RoleID:   claims.RoleID,
+			Scope:    claims.Scope,
+			TenantID: claims.TenantID,
 		})
 		c.Next()
 	}

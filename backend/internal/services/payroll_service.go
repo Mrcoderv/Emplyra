@@ -30,10 +30,10 @@ func NewSalaryService(structures *repositories.SalaryStructureRepository, employ
 	return &SalaryService{structures: structures, employees: employees, audit: audit}
 }
 
-func (s *SalaryService) CreateStructure(in struct {
+func (s *SalaryService) CreateStructure(tenantID string, in struct {
 	EmployeeID, BasicSalary, Allowances, Bonus, OvertimeRate, TaxRate, TaxAmount, Deductions, EffectiveFrom, Status string
 }, actorID, ip, ua string) (*models.SalaryStructure, error) {
-	if _, err := s.employees.FindByID(in.EmployeeID); err != nil {
+	if _, err := s.employees.FindByID(tenantID, in.EmployeeID); err != nil {
 		return nil, ErrNotFound
 	}
 	basic, err := models.FromDecimal(in.BasicSalary)
@@ -45,6 +45,7 @@ func (s *SalaryService) CreateStructure(in struct {
 		return nil, errors.New("invalid effective_from (expected YYYY-MM-DD)")
 	}
 	st := &models.SalaryStructure{
+		TenantID:      tenantID,
 		EmployeeID:    in.EmployeeID,
 		BasicSalary:   basic,
 		Allowances:    decOrZero(in.Allowances),
@@ -63,10 +64,10 @@ func (s *SalaryService) CreateStructure(in struct {
 	return st, nil
 }
 
-func (s *SalaryService) UpdateStructure(id string, in struct {
+func (s *SalaryService) UpdateStructure(tenantID, id string, in struct {
 	BasicSalary, Allowances, Bonus, OvertimeRate, TaxRate, TaxAmount, Deductions, EffectiveFrom, EffectiveUntil, Status string
 }, actorID, ip, ua string) (*models.SalaryStructure, error) {
-	if _, err := s.structures.FindByID(id); err != nil {
+	if _, err := s.structures.FindByID(tenantID, id); err != nil {
 		return nil, ErrNotFound
 	}
 	fields := map[string]interface{}{}
@@ -99,35 +100,35 @@ func (s *SalaryService) UpdateStructure(id string, in struct {
 		fields["status"] = in.Status
 	}
 	if len(fields) > 0 {
-		if err := s.structures.Update(id, fields); err != nil {
+		if err := s.structures.Update(tenantID, id, fields); err != nil {
 			return nil, err
 		}
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "salary_structure", id, ip, ua, nil)
-	return s.structures.FindByID(id)
+	return s.structures.FindByID(tenantID, id)
 }
 
-func (s *SalaryService) DeleteStructure(id, actorID, ip, ua string) error {
-	if _, err := s.structures.FindByID(id); err != nil {
+func (s *SalaryService) DeleteStructure(tenantID, id, actorID, ip, ua string) error {
+	if _, err := s.structures.FindByID(tenantID, id); err != nil {
 		return ErrNotFound
 	}
-	if err := s.structures.Delete(id); err != nil {
+	if err := s.structures.Delete(tenantID, id); err != nil {
 		return err
 	}
 	s.audit.Record(actorID, models.ActionDelete, "salary_structure", id, ip, ua, nil)
 	return nil
 }
 
-func (s *SalaryService) GetStructure(id string) (*models.SalaryStructure, error) {
-	st, err := s.structures.FindByID(id)
+func (s *SalaryService) GetStructure(tenantID, id string) (*models.SalaryStructure, error) {
+	st, err := s.structures.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return st, nil
 }
 
-func (s *SalaryService) ListStructures(employeeID string) ([]models.SalaryStructure, error) {
-	return s.structures.List(employeeID)
+func (s *SalaryService) ListStructures(tenantID, employeeID string) ([]models.SalaryStructure, error) {
+	return s.structures.List(tenantID, employeeID)
 }
 
 type PayrollService struct {
@@ -141,24 +142,25 @@ func NewPayrollService(payroll *repositories.PayrollRepository, salary *reposito
 }
 
 // Generate drafts payroll for every active employee with a salary structure.
-func (s *PayrollService) Generate(month, year int, actorID, ip, ua string) (int, error) {
+func (s *PayrollService) Generate(tenantID string, month, year int, actorID, ip, ua string) (int, error) {
 	on := lastDayOfMonth(month, year)
-	employees, err := s.payroll.ActiveEmployeesWithSalary(datatypes.Date(on))
+	employees, err := s.payroll.ActiveEmployeesWithSalary(tenantID, datatypes.Date(on))
 	if err != nil {
 		return 0, err
 	}
 	created := 0
 	err = s.payroll.Tx(func(tx *gorm.DB) error {
 		for _, e := range employees {
-			exists, err := s.payroll.ExistsForEmployee(e.ID, month, year)
+			exists, err := s.payroll.ExistsForEmployee(tenantID, e.ID, month, year)
 			if err != nil || exists {
 				continue
 			}
-			st, err := s.salary.EffectiveFor(e.ID, datatypes.Date(on))
+			st, err := s.salary.EffectiveFor(tenantID, e.ID, datatypes.Date(on))
 			if err != nil {
 				continue
 			}
 			p := models.Payroll{
+				TenantID:          tenantID,
 				Month:             month,
 				Year:              year,
 				EmployeeID:        e.ID,
@@ -188,8 +190,8 @@ func (s *PayrollService) Generate(month, year int, actorID, ip, ua string) (int,
 }
 
 // Process computes final figures and marks a draft payroll as processed.
-func (s *PayrollService) Process(id string, in struct{ Bonus, Overtime, Deductions, Notes string }, actorID, ip, ua string) (*models.Payroll, error) {
-	p, err := s.payroll.FindByID(id)
+func (s *PayrollService) Process(tenantID, id string, in struct{ Bonus, Overtime, Deductions, Notes string }, actorID, ip, ua string) (*models.Payroll, error) {
+	p, err := s.payroll.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -210,13 +212,13 @@ func (s *PayrollService) Process(id string, in struct{ Bonus, Overtime, Deductio
 			p.Overtime = d
 		}
 	} else {
-		ot, err := s.payroll.EmployeeAttendanceOvertime(p.EmployeeID, p.Month, p.Year)
+		ot, err := s.payroll.EmployeeAttendanceOvertime(tenantID, p.EmployeeID, p.Month, p.Year)
 		if err == nil {
 			overtimeHours = ot
 		}
 	}
 
-	st, err := s.salary.EffectiveFor(p.EmployeeID, datatypes.Date(lastDayOfMonth(p.Month, p.Year)))
+	st, err := s.salary.EffectiveFor(tenantID, p.EmployeeID, datatypes.Date(lastDayOfMonth(p.Month, p.Year)))
 	if err == nil {
 		if p.Overtime.IsZero() && overtimeHours > 0 {
 			rate := st.OvertimeRate
@@ -254,15 +256,15 @@ func (s *PayrollService) Process(id string, in struct{ Bonus, Overtime, Deductio
 		"gross_salary": p.GrossSalary, "tax": p.Tax, "net_salary": p.NetSalary,
 		"status": p.Status, "processed_by": actorID, "processed_at": &now, "notes": in.Notes,
 	}
-	if err := s.payroll.Update(id, fields); err != nil {
+	if err := s.payroll.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionPayrollProcess, "payroll", id, ip, ua, map[string]string{"month": itoa(p.Month), "year": itoa(p.Year), "net": p.NetSalary.FloatString()})
-	return s.payroll.FindByID(id)
+	return s.payroll.FindByID(tenantID, id)
 }
 
-func (s *PayrollService) MarkPaid(id, paymentRef, notes string, actorID, ip, ua string) (*models.Payroll, error) {
-	p, err := s.payroll.FindByID(id)
+func (s *PayrollService) MarkPaid(tenantID, id, paymentRef, notes string, actorID, ip, ua string) (*models.Payroll, error) {
+	p, err := s.payroll.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -271,15 +273,15 @@ func (s *PayrollService) MarkPaid(id, paymentRef, notes string, actorID, ip, ua 
 	}
 	now := time.Now().UTC()
 	fields := map[string]interface{}{"status": models.PayrollPaid, "paid_on": &now, "payment_ref": paymentRef, "notes": notes}
-	if err := s.payroll.Update(id, fields); err != nil {
+	if err := s.payroll.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "payroll", id, ip, ua, map[string]string{"action": "mark_paid"})
-	return s.payroll.FindByID(id)
+	return s.payroll.FindByID(tenantID, id)
 }
 
-func (s *PayrollService) Cancel(id, notes string, actorID, ip, ua string) (*models.Payroll, error) {
-	p, err := s.payroll.FindByID(id)
+func (s *PayrollService) Cancel(tenantID, id, notes string, actorID, ip, ua string) (*models.Payroll, error) {
+	p, err := s.payroll.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -287,27 +289,27 @@ func (s *PayrollService) Cancel(id, notes string, actorID, ip, ua string) (*mode
 		return nil, ErrInvalidStatusTransition
 	}
 	fields := map[string]interface{}{"status": models.PayrollCancelled, "notes": notes}
-	if err := s.payroll.Update(id, fields); err != nil {
+	if err := s.payroll.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "payroll", id, ip, ua, map[string]string{"action": "cancel"})
-	return s.payroll.FindByID(id)
+	return s.payroll.FindByID(tenantID, id)
 }
 
-func (s *PayrollService) Get(id string) (*models.Payroll, error) {
-	p, err := s.payroll.FindByID(id)
+func (s *PayrollService) Get(tenantID, id string) (*models.Payroll, error) {
+	p, err := s.payroll.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return p, nil
 }
 
-func (s *PayrollService) Payslip(id string) (*models.Payroll, error) {
-	return s.Get(id)
+func (s *PayrollService) Payslip(tenantID, id string) (*models.Payroll, error) {
+	return s.Get(tenantID, id)
 }
 
-func (s *PayrollService) List(p utils.Pagination, month, year int, employeeID, status, departmentID string) ([]models.Payroll, int64, error) {
-	return s.payroll.List(p, month, year, employeeID, status, departmentID)
+func (s *PayrollService) List(tenantID string, p utils.Pagination, month, year int, employeeID, status, departmentID string) ([]models.Payroll, int64, error) {
+	return s.payroll.List(tenantID, p, month, year, employeeID, status, departmentID)
 }
 
 func payrollGross(p *models.Payroll) models.Decimal {

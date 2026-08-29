@@ -81,6 +81,40 @@ func (r *UserRepository) List(pagination func(*gorm.DB) *gorm.DB, filter func(*g
 	return users, total, err
 }
 
+func (r *UserRepository) ListPlatform(pagination func(*gorm.DB) *gorm.DB, filter func(*gorm.DB) *gorm.DB) ([]models.User, int64, error) {
+	var users []models.User
+	var total int64
+	q := r.db.Model(&models.User{}).Where("tenant_id IS NULL")
+	if filter != nil {
+		q = filter(q)
+	}
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if pagination != nil {
+		q = pagination(q)
+	}
+	err := q.Preload("Role").Order("created_at DESC").Find(&users).Error
+	return users, total, err
+}
+
+func (r *UserRepository) ListTenant(tenantID string, pagination func(*gorm.DB) *gorm.DB, filter func(*gorm.DB) *gorm.DB) ([]models.User, int64, error) {
+	var users []models.User
+	var total int64
+	q := r.db.Model(&models.User{}).Where("tenant_id = ?", tenantID)
+	if filter != nil {
+		q = filter(q)
+	}
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if pagination != nil {
+		q = pagination(q)
+	}
+	err := q.Preload("Role").Order("created_at DESC").Find(&users).Error
+	return users, total, err
+}
+
 func (r *UserRepository) RolePermissions(roleID string) ([]string, error) {
 	var perms []string
 	err := r.db.Model(&models.Permission{}).

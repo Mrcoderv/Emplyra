@@ -33,8 +33,8 @@ func NewDocumentService(docs *repositories.DocumentRepository, emp *repositories
 	return &DocumentService{docs: docs, emp: emp, cfg: cfg, audit: audit}
 }
 
-func (s *DocumentService) Upload(employeeID, title, docType string, uploadedBy *string, fh *multipart.FileHeader) (*models.Document, error) {
-	if _, err := s.emp.FindByID(employeeID); err != nil {
+func (s *DocumentService) Upload(tenantID, employeeID, title, docType string, uploadedBy *string, fh *multipart.FileHeader) (*models.Document, error) {
+	if _, err := s.emp.FindByID(tenantID, employeeID); err != nil {
 		return nil, ErrEmployeeNotFound
 	}
 	if fh == nil {
@@ -71,6 +71,7 @@ func (s *DocumentService) Upload(employeeID, title, docType string, uploadedBy *
 	}
 
 	doc := &models.Document{
+		TenantID:   tenantID,
 		EmployeeID: employeeID,
 		Title:      title,
 		Type:       models.DocumentType(orStr(docType, string(models.DocOther))),
@@ -90,24 +91,24 @@ func (s *DocumentService) Upload(employeeID, title, docType string, uploadedBy *
 	return doc, nil
 }
 
-func (s *DocumentService) Get(id string) (*models.Document, error) {
-	d, err := s.docs.FindByID(id)
+func (s *DocumentService) Get(tenantID, id string) (*models.Document, error) {
+	d, err := s.docs.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return d, nil
 }
 
-func (s *DocumentService) List(p utils.Pagination, employeeID, docType, status string) ([]models.Document, int64, error) {
-	return s.docs.List(p, employeeID, docType, status)
+func (s *DocumentService) List(tenantID string, p utils.Pagination, employeeID, docType, status string) ([]models.Document, int64, error) {
+	return s.docs.List(tenantID, p, employeeID, docType, status)
 }
 
-func (s *DocumentService) Delete(id string, actorID *string) error {
-	d, err := s.docs.FindByID(id)
+func (s *DocumentService) Delete(tenantID, id string, actorID *string) error {
+	d, err := s.docs.FindByID(tenantID, id)
 	if err != nil {
 		return ErrNotFound
 	}
-	if err := s.docs.Delete(id); err != nil {
+	if err := s.docs.Delete(tenantID, id); err != nil {
 		return err
 	}
 	if d.FilePath != "" {
@@ -119,8 +120,8 @@ func (s *DocumentService) Delete(id string, actorID *string) error {
 	return nil
 }
 
-func (s *DocumentService) DownloadPath(id string) (string, string, error) {
-	d, err := s.docs.FindByID(id)
+func (s *DocumentService) DownloadPath(tenantID, id string) (string, string, error) {
+	d, err := s.docs.FindByID(tenantID, id)
 	if err != nil {
 		return "", "", ErrNotFound
 	}

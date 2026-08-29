@@ -19,20 +19,20 @@ func (r *DocumentRepository) Create(d *models.Document) error {
 	return r.db.Create(d).Error
 }
 
-func (r *DocumentRepository) FindByID(id string) (*models.Document, error) {
+func (r *DocumentRepository) FindByID(tenantID, id string) (*models.Document, error) {
 	var d models.Document
-	if err := r.db.Preload("Employee").Preload("Uploader").First(&d, "id = ?", id).Error; err != nil {
+	if err := r.db.Scopes(TenantScope(tenantID)).Preload("Employee").Preload("Uploader").First(&d, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &d, nil
 }
 
-func (r *DocumentRepository) Delete(id string) error {
-	return r.db.Where("id = ?", id).Delete(&models.Document{}).Error
+func (r *DocumentRepository) Delete(tenantID, id string) error {
+	return r.db.Scopes(TenantScope(tenantID)).Where("id = ?", id).Delete(&models.Document{}).Error
 }
 
-func (r *DocumentRepository) List(p utils.Pagination, employeeID, docType, status string) ([]models.Document, int64, error) {
-	q := r.db.Model(&models.Document{})
+func (r *DocumentRepository) List(tenantID string, p utils.Pagination, employeeID, docType, status string) ([]models.Document, int64, error) {
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.Document{})
 	if employeeID != "" {
 		q = q.Where("employee_id = ?", employeeID)
 	}

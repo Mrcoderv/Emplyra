@@ -118,7 +118,8 @@ All tables: `id` UUID, `created_at`, `updated_at`, `deleted_at` (soft delete whe
   PROCESSED/PAID/CANCELLED), processed_by, processed_at, paid_on, notes
 - `job_posts` — title, department_id, description, requirements, vacancies, status,
   posted_by, deadline
-- `candidates` — names, email(unique), phone, resume_path, source, status, hired_as_employee
+- `candidates` — names, email(unique), phone, address, date_of_birth, education, experience,
+  skills, resume_path, source, status, hired_as_employee
 - `applications` — job_post_id, candidate_id, cover_letter, status, applied_date
 - `interviews` — application_id, interviewer_id, scheduled_at, type, status, feedback
 - `onboardings` — employee_id, candidate_id, start_date, status, tasks(JSONB), notes
@@ -131,6 +132,12 @@ All tables: `id` UUID, `created_at`, `updated_at`, `deleted_at` (soft delete whe
 - `training_enrollments` — program_id, employee_id, status, completed_at
 - `documents` — employee_id, title, type, file_path, mime_type, size, status, uploaded_by
 - `notifications` — user_id, title, message, type, is_read, metadata(JSONB)
+- `google_form_integrations` — job_id(unique), provider, form_url, spreadsheet_id,
+  response_sheet_name, header_row, field_mapping(JSONB), status, last_synced_at,
+  synced_rows, sync_error
+- `google_form_responses` — integration_id, external_response_id(unique), candidate_id,
+  application_id, raw_response(JSONB), submitted_at, imported_at, status, error_message
+- `google_oauth_tokens` — key(unique), data, expires_at (encrypted token store)
 
 Indexes on all FK columns, `employees.employee_code`, `employees.email`, `leaves(employee,
 status)`, `attendance(employee,date)` unique, `payroll(employee,month,year)` unique.
@@ -248,7 +255,8 @@ All phases are shipped. Deviations from the plan above:
 | Holidays | `/holidays` (CRUD) |
 | Leaves | `/leaves` (apply, list, approve/reject), `/leaves/types`, `/leaves/balances`, `/leaves/balances/set` |
 | Payroll | `/salary` (structures), `/payroll` (generate/process/mark-paid/cancel/payslip) |
-| Recruitment | `/recruitment/{jobs,candidates,applications,interviews,onboarding}` |
+| Recruitment | `/recruitment/{jobs,candidates,applications,interviews,onboarding}` + per-job `/google-form` (connect/get/update/delete/sync/sync-status/responses) |
+| Google Forms | `/integrations/google/oauth/{authorize,callback}` (shared with recruitment sync engine) |
 | Performance | `/performance/{goals,kpis,reviews}` |
 | Training | `/training/{programs,schedules,enrollments}` |
 | Documents | `/documents` (upload, list, get, download, delete) |
@@ -272,6 +280,13 @@ All phases are shipped. Deviations from the plan above:
   403 on missing permission. `EMPLOYEE` requests are self-scoped per module.
 - Recruitment: dedupes candidates by email and applications per job; `Hire` creates the
   employee + optional user account + onboarding plan without duplicates.
+- Google Forms: official Sheets + OAuth APIs (`internal/google`); header-based field
+  mapping (strict when configured, lenient defaults otherwise); sync engine
+  (`internal/services/google_forms_service.go`) imports rows as candidates + APPLIED
+  applications, deduping via the `google_form_responses.external_response_id` ledger
+  (always, both incremental and full modes); rows always land in `IMPORTED/DUPLICATE/ERROR`;
+  per-job integration tracked (status, last_synced_at, synced_rows, sync_error); any
+  failed run records counters + notification; tokens encrypted at rest.
 - Seed: idempotent — permission catalog, six system roles with mapped permissions,
   configurable super admin from env.
 - Audit: every mutation records `user_id, action, resource, resource_id, ip, user_agent,
@@ -283,8 +298,10 @@ All phases are shipped. Deviations from the plan above:
   refresh-token hashing, email normalization, `Decimal` arithmetic/JSON/scan, business-day
   counting, payroll gross/net math, late-minute computation, RBAC allow/deny/unauthenticated.
 - Integration tests (`internal/services/*_integration_test.go`): full leave
-  create→approve→balance-decrement + overlap + insufficient-balance flows, and attendance
-  check-in→duplicate→check-out. Skipped automatically unless `TEST_DB_URL` is set.
+  create→approve→balance-decrement + overlap + insufficient-balance flows, attendance
+  check-in→duplicate→check-out, and Google Forms sync (full import → duplicate
+  prevention → incremental append → sheet-error surfacing, backing a fake `SheetsReader`).
+  Skipped automatically unless `TEST_DB_URL` is set.
 - Every phase ended with `gofmt -w .` → `go build ./...` → `go vet ./...` →
   `go test ./...`; final pass is clean.
 

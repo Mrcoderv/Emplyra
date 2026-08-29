@@ -14,24 +14,24 @@ type GoalRepository struct {
 func NewGoalRepository(db *gorm.DB) *GoalRepository { return &GoalRepository{db: db} }
 
 func (r *GoalRepository) Create(m *models.Goal) error { return r.db.Create(m).Error }
-func (r *GoalRepository) Update(id string, f map[string]interface{}) error {
-	return r.db.Model(&models.Goal{}).Where("id = ?", id).Updates(f).Error
+func (r *GoalRepository) Update(tenantID, id string, f map[string]interface{}) error {
+	return r.db.Model(&models.Goal{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(f).Error
 }
-func (r *GoalRepository) Delete(id string) error {
-	return r.db.Delete(&models.Goal{}, "id = ?", id).Error
+func (r *GoalRepository) Delete(tenantID, id string) error {
+	return r.db.Scopes(TenantScope(tenantID)).Delete(&models.Goal{}, "id = ?", id).Error
 }
-func (r *GoalRepository) FindByID(id string) (*models.Goal, error) {
+func (r *GoalRepository) FindByID(tenantID, id string) (*models.Goal, error) {
 	var m models.Goal
-	err := r.db.Preload("Employee").First(&m, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Employee").First(&m, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &m, nil
 }
-func (r *GoalRepository) List(p utils.Pagination, employeeIDs []string, status string) ([]models.Goal, int64, error) {
+func (r *GoalRepository) List(tenantID string, p utils.Pagination, employeeIDs []string, status string) ([]models.Goal, int64, error) {
 	var items []models.Goal
 	var total int64
-	q := r.db.Model(&models.Goal{})
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.Goal{})
 	if len(employeeIDs) > 0 {
 		q = q.Where("employee_id IN ?", employeeIDs)
 	}
@@ -52,24 +52,24 @@ type KpiRepository struct {
 func NewKpiRepository(db *gorm.DB) *KpiRepository { return &KpiRepository{db: db} }
 
 func (r *KpiRepository) Create(m *models.KPI) error { return r.db.Create(m).Error }
-func (r *KpiRepository) Update(id string, f map[string]interface{}) error {
-	return r.db.Model(&models.KPI{}).Where("id = ?", id).Updates(f).Error
+func (r *KpiRepository) Update(tenantID, id string, f map[string]interface{}) error {
+	return r.db.Model(&models.KPI{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(f).Error
 }
-func (r *KpiRepository) Delete(id string) error {
-	return r.db.Delete(&models.KPI{}, "id = ?", id).Error
+func (r *KpiRepository) Delete(tenantID, id string) error {
+	return r.db.Scopes(TenantScope(tenantID)).Delete(&models.KPI{}, "id = ?", id).Error
 }
-func (r *KpiRepository) FindByID(id string) (*models.KPI, error) {
+func (r *KpiRepository) FindByID(tenantID, id string) (*models.KPI, error) {
 	var m models.KPI
-	err := r.db.Preload("Employee").First(&m, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Employee").First(&m, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &m, nil
 }
-func (r *KpiRepository) List(p utils.Pagination, employeeIDs []string, period string) ([]models.KPI, int64, error) {
+func (r *KpiRepository) List(tenantID string, p utils.Pagination, employeeIDs []string, period string) ([]models.KPI, int64, error) {
 	var items []models.KPI
 	var total int64
-	q := r.db.Model(&models.KPI{})
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.KPI{})
 	if len(employeeIDs) > 0 {
 		q = q.Where("employee_id IN ?", employeeIDs)
 	}
@@ -90,21 +90,21 @@ type ReviewRepository struct {
 func NewReviewRepository(db *gorm.DB) *ReviewRepository { return &ReviewRepository{db: db} }
 
 func (r *ReviewRepository) Create(m *models.PerformanceReview) error { return r.db.Create(m).Error }
-func (r *ReviewRepository) Update(id string, f map[string]interface{}) error {
-	return r.db.Model(&models.PerformanceReview{}).Where("id = ?", id).Updates(f).Error
+func (r *ReviewRepository) Update(tenantID, id string, f map[string]interface{}) error {
+	return r.db.Model(&models.PerformanceReview{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(f).Error
 }
-func (r *ReviewRepository) FindByID(id string) (*models.PerformanceReview, error) {
+func (r *ReviewRepository) FindByID(tenantID, id string) (*models.PerformanceReview, error) {
 	var m models.PerformanceReview
-	err := r.db.Preload("Employee").Preload("Reviewer").First(&m, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Employee").Preload("Reviewer").First(&m, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &m, nil
 }
-func (r *ReviewRepository) List(p utils.Pagination, employeeIDs []string, reviewerID, status string) ([]models.PerformanceReview, int64, error) {
+func (r *ReviewRepository) List(tenantID string, p utils.Pagination, employeeIDs []string, reviewerID, status string) ([]models.PerformanceReview, int64, error) {
 	var items []models.PerformanceReview
 	var total int64
-	q := r.db.Model(&models.PerformanceReview{})
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.PerformanceReview{})
 	if len(employeeIDs) > 0 {
 		q = q.Where("employee_id IN ?", employeeIDs)
 	}

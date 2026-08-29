@@ -22,7 +22,7 @@ func (h *EmployeeHandler) List(c *gin.Context) {
 	var params dto.EmployeeListParams
 	_ = c.ShouldBindQuery(&params)
 	p := utils.NewPagination(params.Page, params.PageSize)
-	items, total, err := h.svc.List(p, struct{ Search, DepartmentID, DesignationID, ManagerID, Status, EmploymentType, SortBy, SortOrder string }{
+	items, total, err := h.svc.List(middleware.TenantID(c), p, struct{ Search, DepartmentID, DesignationID, ManagerID, Status, EmploymentType, SortBy, SortOrder string }{
 		Search: params.Search, DepartmentID: params.DepartmentID, DesignationID: params.DesignationID,
 		ManagerID: params.ManagerID, Status: params.Status, EmploymentType: params.EmploymentType,
 		SortBy: params.SortBy, SortOrder: params.SortOrder,
@@ -35,7 +35,7 @@ func (h *EmployeeHandler) List(c *gin.Context) {
 }
 
 func (h *EmployeeHandler) Get(c *gin.Context) {
-	e, err := h.svc.Get(c.Param("id"))
+	e, err := h.svc.Get(middleware.TenantID(c), c.Param("id"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -50,7 +50,7 @@ func (h *EmployeeHandler) Create(c *gin.Context) {
 		return
 	}
 	actor := middleware.MustPrincipal(c)
-	e, err := h.svc.Create(employeeInputFromRequest(req), actor.UserID, clientIP(c), userAgent(c))
+	e, err := h.svc.Create(middleware.TenantID(c), employeeInputFromRequest(req), actor.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -65,7 +65,7 @@ func (h *EmployeeHandler) Update(c *gin.Context) {
 		return
 	}
 	actor := middleware.MustPrincipal(c)
-	e, err := h.svc.Update(c.Param("id"), employeeInputFromUpdate(req), actor.UserID, clientIP(c), userAgent(c))
+	e, err := h.svc.Update(middleware.TenantID(c), c.Param("id"), employeeInputFromUpdate(req), actor.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -75,7 +75,7 @@ func (h *EmployeeHandler) Update(c *gin.Context) {
 
 func (h *EmployeeHandler) Delete(c *gin.Context) {
 	actor := middleware.MustPrincipal(c)
-	if err := h.svc.Delete(c.Param("id"), actor.UserID, clientIP(c), userAgent(c)); err != nil {
+	if err := h.svc.Delete(middleware.TenantID(c), c.Param("id"), actor.UserID, clientIP(c), userAgent(c)); err != nil {
 		mapServiceError(c, err)
 		return
 	}

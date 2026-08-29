@@ -5,12 +5,22 @@ import "time"
 type RoleName string
 
 const (
-	RoleSuperAdmin RoleName = "SUPER_ADMIN"
-	RoleHRAdmin    RoleName = "HR_ADMIN"
-	RoleManager    RoleName = "MANAGER"
-	RoleEmployee   RoleName = "EMPLOYEE"
-	RoleRecruiter  RoleName = "RECRUITER"
-	RoleAccountant RoleName = "ACCOUNTANT"
+	RoleSuperAdmin      RoleName = "SUPER_ADMIN"
+	RoleHRAdmin         RoleName = "HR_ADMIN"
+	RoleManager         RoleName = "MANAGER"
+	RoleEmployee        RoleName = "EMPLOYEE"
+	RoleRecruiter       RoleName = "RECRUITER"
+	RoleAccountant      RoleName = "ACCOUNTANT"
+	RoleTenantOwner     RoleName = "TENANT_OWNER"
+	RolePlatformOwner   RoleName = "PLATFORM_OWNER"
+	RolePlatformAdmin   RoleName = "PLATFORM_ADMIN"
+	RolePlatformSupport RoleName = "PLATFORM_SUPPORT"
+	RolePlatformAuditor RoleName = "PLATFORM_AUDITOR"
+)
+
+const (
+	RoleScopePlatform = "platform"
+	RoleScopeTenant   = "tenant"
 )
 
 type UserStatus string
@@ -30,6 +40,8 @@ type User struct {
 	LastName     string     `gorm:"size:100" json:"last_name"`
 	Status       UserStatus `gorm:"size:20;index;default:ACTIVE" json:"status"`
 	LastLoginAt  *time.Time `json:"last_login_at,omitempty"`
+	TenantID     *string    `gorm:"type:uuid;index" json:"tenant_id,omitempty"`
+	Tenant       *Tenant    `gorm:"foreignKey:TenantID" json:"tenant,omitempty"`
 	RoleID       string     `gorm:"type:uuid;index" json:"role_id"`
 	Role         *Role      `gorm:"foreignKey:RoleID" json:"role,omitempty"`
 }
@@ -51,6 +63,7 @@ type Role struct {
 	BaseModel
 	Name        string       `gorm:"size:50;uniqueIndex;not null" json:"name"`
 	Description string       `gorm:"size:255" json:"description"`
+	Scope       string       `gorm:"size:20;index;default:tenant" json:"scope"`
 	IsSystem    bool         `gorm:"default:false" json:"is_system"`
 	Permissions []Permission `gorm:"many2many:role_permissions;" json:"permissions,omitempty"`
 }
@@ -68,7 +81,7 @@ type RefreshToken struct {
 	TokenHash  string     `gorm:"size:64;uniqueIndex;not null" json:"-"`
 	ExpiresAt  time.Time  `gorm:"index;not null" json:"expires_at"`
 	RevokedAt  *time.Time `json:"-"`
-	ReplacedBy string     `gorm:"type:uuid" json:"-"`
+	ReplacedBy *string    `gorm:"type:uuid" json:"-"`
 	IP         string     `gorm:"size:64" json:"-"`
 	UserAgent  string     `gorm:"size:255" json:"-"`
 	User       *User      `gorm:"foreignKey:UserID" json:"-"`

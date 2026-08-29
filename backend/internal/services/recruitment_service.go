@@ -53,9 +53,9 @@ type JobPostInput struct {
 	Vacancies                                                        int
 }
 
-func (s *RecruitmentService) CreateJob(in JobPostInput, actorID, ip, ua string) (*models.JobPost, error) {
+func (s *RecruitmentService) CreateJob(tenantID string, in JobPostInput, actorID, ip, ua string) (*models.JobPost, error) {
 	j := &models.JobPost{
-		Title: in.Title, DepartmentID: stringPtr(in.DepartmentID),
+		TenantID: tenantID, Title: in.Title, DepartmentID: stringPtr(in.DepartmentID),
 		Description: in.Description, Requirements: in.Requirements,
 		Vacancies: in.Vacancies, Status: models.JobPostStatus(orStr(in.Status, string(models.JobOpen))),
 		PostedBy: &actorID,
@@ -76,8 +76,8 @@ func (s *RecruitmentService) CreateJob(in JobPostInput, actorID, ip, ua string) 
 	return j, nil
 }
 
-func (s *RecruitmentService) UpdateJob(id string, in JobPostInput, actorID, ip, ua string) (*models.JobPost, error) {
-	if _, err := s.jobs.FindByID(id); err != nil {
+func (s *RecruitmentService) UpdateJob(tenantID, id string, in JobPostInput, actorID, ip, ua string) (*models.JobPost, error) {
+	if _, err := s.jobs.FindByID(tenantID, id); err != nil {
 		return nil, ErrNotFound
 	}
 	fields := map[string]interface{}{}
@@ -104,53 +104,57 @@ func (s *RecruitmentService) UpdateJob(id string, in JobPostInput, actorID, ip, 
 			fields["deadline"] = datatypes.Date(d)
 		}
 	}
-	if err := s.jobs.Update(id, fields); err != nil {
+	if err := s.jobs.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "job_post", id, ip, ua, nil)
-	return s.jobs.FindByID(id)
+	return s.jobs.FindByID(tenantID, id)
 }
 
-func (s *RecruitmentService) DeleteJob(id, actorID, ip, ua string) error {
-	if _, err := s.jobs.FindByID(id); err != nil {
+func (s *RecruitmentService) DeleteJob(tenantID, id, actorID, ip, ua string) error {
+	if _, err := s.jobs.FindByID(tenantID, id); err != nil {
 		return ErrNotFound
 	}
-	if err := s.jobs.Delete(id); err != nil {
+	if err := s.jobs.Delete(tenantID, id); err != nil {
 		return err
 	}
 	s.audit.Record(actorID, models.ActionDelete, "job_post", id, ip, ua, nil)
 	return nil
 }
 
-func (s *RecruitmentService) Job(id string) (*models.JobPost, error) {
-	j, err := s.jobs.FindByID(id)
+func (s *RecruitmentService) Job(tenantID, id string) (*models.JobPost, error) {
+	j, err := s.jobs.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return j, nil
 }
 
-func (s *RecruitmentService) Jobs(p utils.Pagination, departmentID, status, search string) ([]models.JobPost, int64, error) {
-	return s.jobs.List(p, departmentID, status, search)
+func (s *RecruitmentService) Jobs(tenantID string, p utils.Pagination, departmentID, status, search string) ([]models.JobPost, int64, error) {
+	return s.jobs.List(tenantID, p, departmentID, status, search)
 }
 
 // --- Candidates ---
 
 type CandidateInput struct {
 	FirstName, LastName, Email, Phone, Source, Status, Notes, ResumePath string
+	Address, DateOfBirth, Education, Experience, Skills                  string
 }
 
-func (s *RecruitmentService) CreateCandidate(in CandidateInput, actorID, ip, ua string) (*models.Candidate, error) {
-	if s.candidates.AlreadyEmployeeEmail(in.Email) {
+func (s *RecruitmentService) CreateCandidate(tenantID string, in CandidateInput, actorID, ip, ua string) (*models.Candidate, error) {
+	if s.candidates.AlreadyEmployeeEmail(tenantID, in.Email) {
 		return nil, ErrCandidateAlreadyEmployee
 	}
-	if existing, _ := s.candidates.FindByEmail(in.Email); existing != nil {
+	if existing, _ := s.candidates.FindByEmail(tenantID, in.Email); existing != nil {
 		return existing, nil
 	}
 	c := &models.Candidate{
+		TenantID:  tenantID,
 		FirstName: in.FirstName, LastName: in.LastName, Email: in.Email, Phone: in.Phone,
 		Source: in.Source, Status: models.CandidateStatus(orStr(in.Status, string(models.CandidateNew))),
 		Notes: in.Notes, ResumePath: in.ResumePath,
+		Address: in.Address, DateOfBirth: in.DateOfBirth,
+		Education: in.Education, Experience: in.Experience, Skills: in.Skills,
 	}
 	if err := s.candidates.Create(c); err != nil {
 		return nil, err
@@ -159,12 +163,12 @@ func (s *RecruitmentService) CreateCandidate(in CandidateInput, actorID, ip, ua 
 	return c, nil
 }
 
-func (s *RecruitmentService) UpdateCandidate(id string, in CandidateInput, actorID, ip, ua string) (*models.Candidate, error) {
-	ex, err := s.candidates.FindByID(id)
+func (s *RecruitmentService) UpdateCandidate(tenantID, id string, in CandidateInput, actorID, ip, ua string) (*models.Candidate, error) {
+	ex, err := s.candidates.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
-	if in.Email != "" && in.Email != ex.Email && s.candidates.AlreadyEmployeeEmail(in.Email) {
+	if in.Email != "" && in.Email != ex.Email && s.candidates.AlreadyEmployeeEmail(tenantID, in.Email) {
 		return nil, ErrCandidateAlreadyEmployee
 	}
 	fields := map[string]interface{}{}
@@ -192,34 +196,49 @@ func (s *RecruitmentService) UpdateCandidate(id string, in CandidateInput, actor
 	if in.ResumePath != "" {
 		fields["resume_path"] = in.ResumePath
 	}
-	if err := s.candidates.Update(id, fields); err != nil {
+	if in.Address != "" {
+		fields["address"] = in.Address
+	}
+	if in.DateOfBirth != "" {
+		fields["date_of_birth"] = in.DateOfBirth
+	}
+	if in.Education != "" {
+		fields["education"] = in.Education
+	}
+	if in.Experience != "" {
+		fields["experience"] = in.Experience
+	}
+	if in.Skills != "" {
+		fields["skills"] = in.Skills
+	}
+	if err := s.candidates.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "candidate", id, ip, ua, nil)
-	return s.candidates.FindByID(id)
+	return s.candidates.FindByID(tenantID, id)
 }
 
-func (s *RecruitmentService) DeleteCandidate(id, actorID, ip, ua string) error {
-	if _, err := s.candidates.FindByID(id); err != nil {
+func (s *RecruitmentService) DeleteCandidate(tenantID, id, actorID, ip, ua string) error {
+	if _, err := s.candidates.FindByID(tenantID, id); err != nil {
 		return ErrNotFound
 	}
-	if err := s.candidates.Delete(id); err != nil {
+	if err := s.candidates.Delete(tenantID, id); err != nil {
 		return err
 	}
 	s.audit.Record(actorID, models.ActionDelete, "candidate", id, ip, ua, nil)
 	return nil
 }
 
-func (s *RecruitmentService) Candidate(id string) (*models.Candidate, error) {
-	c, err := s.candidates.FindByID(id)
+func (s *RecruitmentService) Candidate(tenantID, id string) (*models.Candidate, error) {
+	c, err := s.candidates.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return c, nil
 }
 
-func (s *RecruitmentService) Candidates(p utils.Pagination, status, search string) ([]models.Candidate, int64, error) {
-	return s.candidates.List(p, status, search)
+func (s *RecruitmentService) Candidates(tenantID string, p utils.Pagination, status, search string) ([]models.Candidate, int64, error) {
+	return s.candidates.List(tenantID, p, status, search)
 }
 
 // --- Applications ---
@@ -228,14 +247,14 @@ type ApplicationInput struct {
 	JobPostID, CandidateID, AppliedDate, CoverLetter string
 }
 
-func (s *RecruitmentService) CreateApplication(in ApplicationInput, actorID, ip, ua string) (*models.Application, error) {
-	if _, err := s.jobs.FindByID(in.JobPostID); err != nil {
+func (s *RecruitmentService) CreateApplication(tenantID string, in ApplicationInput, actorID, ip, ua string) (*models.Application, error) {
+	if _, err := s.jobs.FindByID(tenantID, in.JobPostID); err != nil {
 		return nil, ErrNotFound
 	}
-	if _, err := s.candidates.FindByID(in.CandidateID); err != nil {
+	if _, err := s.candidates.FindByID(tenantID, in.CandidateID); err != nil {
 		return nil, ErrNotFound
 	}
-	exists, err := s.apps.Exists(in.CandidateID, in.JobPostID)
+	exists, err := s.apps.Exists(tenantID, in.CandidateID, in.JobPostID)
 	if err != nil || exists {
 		return nil, ErrDuplicateApplication
 	}
@@ -246,6 +265,7 @@ func (s *RecruitmentService) CreateApplication(in ApplicationInput, actorID, ip,
 		}
 	}
 	a := &models.Application{
+		TenantID:  tenantID,
 		JobPostID: in.JobPostID, CandidateID: in.CandidateID,
 		AppliedDate: datatypes.Date(date), CoverLetter: in.CoverLetter,
 		Status: models.AppApplied,
@@ -257,8 +277,8 @@ func (s *RecruitmentService) CreateApplication(in ApplicationInput, actorID, ip,
 	return a, nil
 }
 
-func (s *RecruitmentService) UpdateApplicationStatus(id, status, note string, actorID, ip, ua string) (*models.Application, error) {
-	app, err := s.apps.FindByID(id)
+func (s *RecruitmentService) UpdateApplicationStatus(tenantID, id, status, note string, actorID, ip, ua string) (*models.Application, error) {
+	app, err := s.apps.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -268,23 +288,23 @@ func (s *RecruitmentService) UpdateApplicationStatus(id, status, note string, ac
 			s.notify.NotifyByEmail(app.Candidate.Email, app.Candidate.FirstName, "Application "+status, fmt.Sprintf("Your application for '%s' has been updated to %s.", app.JobPost.Title, status), models.NotifyRecruitment, "")
 		}
 	}
-	if err := s.apps.Update(id, fields); err != nil {
+	if err := s.apps.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "application", id, ip, ua, map[string]string{"status": status})
-	return s.apps.FindByID(id)
+	return s.apps.FindByID(tenantID, id)
 }
 
-func (s *RecruitmentService) Application(id string) (*models.Application, error) {
-	a, err := s.apps.FindByID(id)
+func (s *RecruitmentService) Application(tenantID, id string) (*models.Application, error) {
+	a, err := s.apps.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return a, nil
 }
 
-func (s *RecruitmentService) Applications(p utils.Pagination, jobID, candidateID, status string) ([]models.Application, int64, error) {
-	return s.apps.List(p, jobID, candidateID, status)
+func (s *RecruitmentService) Applications(tenantID string, p utils.Pagination, jobID, candidateID, status string) ([]models.Application, int64, error) {
+	return s.apps.List(tenantID, p, jobID, candidateID, status)
 }
 
 // --- Interviews ---
@@ -294,8 +314,8 @@ type InterviewInput struct {
 	DurationMin                                     int
 }
 
-func (s *RecruitmentService) ScheduleInterview(in InterviewInput, actorID, ip, ua string) (*models.Interview, error) {
-	if _, err := s.apps.FindByID(in.ApplicationID); err != nil {
+func (s *RecruitmentService) ScheduleInterview(tenantID string, in InterviewInput, actorID, ip, ua string) (*models.Interview, error) {
+	if _, err := s.apps.FindByID(tenantID, in.ApplicationID); err != nil {
 		return nil, ErrNotFound
 	}
 	at, err := time.Parse(time.RFC3339, in.ScheduledAt)
@@ -303,6 +323,7 @@ func (s *RecruitmentService) ScheduleInterview(in InterviewInput, actorID, ip, u
 		return nil, errors.New("invalid scheduled_at (expected RFC3339)")
 	}
 	i := &models.Interview{
+		TenantID:      tenantID,
 		ApplicationID: in.ApplicationID, InterviewerID: stringPtr(in.InterviewerID),
 		ScheduledAt: at, DurationMin: in.DurationMin,
 		Type:   models.InterviewType(orStr(in.Type, string(models.InterviewInPerson))),
@@ -315,30 +336,30 @@ func (s *RecruitmentService) ScheduleInterview(in InterviewInput, actorID, ip, u
 	return i, nil
 }
 
-func (s *RecruitmentService) CompleteInterview(id, status, feedback string, score *float64, actorID, ip, ua string) (*models.Interview, error) {
-	if _, err := s.interviews.FindByID(id); err != nil {
+func (s *RecruitmentService) CompleteInterview(tenantID, id, status, feedback string, score *float64, actorID, ip, ua string) (*models.Interview, error) {
+	if _, err := s.interviews.FindByID(tenantID, id); err != nil {
 		return nil, ErrNotFound
 	}
 	fields := map[string]interface{}{"feedback": feedback, "status": status}
 	if score != nil {
 		fields["score"] = *score
 	}
-	if err := s.interviews.Update(id, fields); err != nil {
+	if err := s.interviews.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "interview", id, ip, ua, map[string]string{"status": status})
-	return s.interviews.FindByID(id)
+	return s.interviews.FindByID(tenantID, id)
 }
 
-func (s *RecruitmentService) Interview(id string) (*models.Interview, error) {
-	i, err := s.interviews.FindByID(id)
+func (s *RecruitmentService) Interview(tenantID, id string) (*models.Interview, error) {
+	i, err := s.interviews.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return i, nil
 }
 
-func (s *RecruitmentService) Interviews(p utils.Pagination, applicationID, interviewerID, status, fromStr, toStr string) ([]models.Interview, int64, error) {
+func (s *RecruitmentService) Interviews(tenantID string, p utils.Pagination, applicationID, interviewerID, status, fromStr, toStr string) ([]models.Interview, int64, error) {
 	var from, to *time.Time
 	if f, err := time.Parse("2006-01-02", fromStr); err == nil {
 		from = &f
@@ -346,16 +367,16 @@ func (s *RecruitmentService) Interviews(p utils.Pagination, applicationID, inter
 	if t, err := time.Parse("2006-01-02", toStr); err == nil {
 		to = &t
 	}
-	return s.interviews.List(p, applicationID, interviewerID, status, from, to)
+	return s.interviews.List(tenantID, p, applicationID, interviewerID, status, from, to)
 }
 
 // --- Onboarding ---
 
-func (s *RecruitmentService) CreateOnboarding(in struct {
+func (s *RecruitmentService) CreateOnboarding(tenantID string, in struct {
 	EmployeeID, CandidateID, StartDate, Notes string
 	Tasks                                     []string
 }, actorID, ip, ua string) (*models.Onboarding, error) {
-	if _, err := s.employees.Get(in.EmployeeID); err != nil {
+	if _, err := s.employees.Get(tenantID, in.EmployeeID); err != nil {
 		return nil, ErrNotFound
 	}
 	start, err := time.Parse("2006-01-02", in.StartDate)
@@ -363,11 +384,12 @@ func (s *RecruitmentService) CreateOnboarding(in struct {
 		return nil, errors.New("invalid start_date (expected YYYY-MM-DD)")
 	}
 	if in.CandidateID != "" {
-		if _, err := s.candidates.FindByID(in.CandidateID); err != nil {
+		if _, err := s.candidates.FindByID(tenantID, in.CandidateID); err != nil {
 			return nil, ErrNotFound
 		}
 	}
 	o := &models.Onboarding{
+		TenantID:    tenantID,
 		EmployeeID:  in.EmployeeID,
 		CandidateID: stringPtr(in.CandidateID),
 		StartDate:   datatypes.Date(start),
@@ -382,8 +404,8 @@ func (s *RecruitmentService) CreateOnboarding(in struct {
 	return o, nil
 }
 
-func (s *RecruitmentService) UpdateOnboarding(id, status, notes string, tasks []string, actorID, ip, ua string) (*models.Onboarding, error) {
-	if _, err := s.onboard.FindByID(id); err != nil {
+func (s *RecruitmentService) UpdateOnboarding(tenantID, id, status, notes string, tasks []string, actorID, ip, ua string) (*models.Onboarding, error) {
+	if _, err := s.onboard.FindByID(tenantID, id); err != nil {
 		return nil, ErrNotFound
 	}
 	fields := map[string]interface{}{}
@@ -396,23 +418,23 @@ func (s *RecruitmentService) UpdateOnboarding(id, status, notes string, tasks []
 	if tasks != nil {
 		fields["tasks"] = tasksJSON(tasks)
 	}
-	if err := s.onboard.Update(id, fields); err != nil {
+	if err := s.onboard.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "onboarding", id, ip, ua, map[string]string{"status": status})
-	return s.onboard.FindByID(id)
+	return s.onboard.FindByID(tenantID, id)
 }
 
-func (s *RecruitmentService) Onboarding(id string) (*models.Onboarding, error) {
-	o, err := s.onboard.FindByID(id)
+func (s *RecruitmentService) Onboarding(tenantID, id string) (*models.Onboarding, error) {
+	o, err := s.onboard.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return o, nil
 }
 
-func (s *RecruitmentService) Onboardings(p utils.Pagination, employeeID, status string) ([]models.Onboarding, int64, error) {
-	return s.onboard.List(p, employeeID, status)
+func (s *RecruitmentService) Onboardings(tenantID string, p utils.Pagination, employeeID, status string) ([]models.Onboarding, int64, error) {
+	return s.onboard.List(tenantID, p, employeeID, status)
 }
 
 // --- Hiring ---
@@ -422,20 +444,20 @@ type HireInput struct {
 	CreateUser                                                                       bool
 }
 
-func (s *RecruitmentService) Hire(in HireInput, actorID, ip, ua string) (*models.Employee, error) {
-	app, err := s.apps.FindByID(in.ApplicationID)
+func (s *RecruitmentService) Hire(tenantID string, in HireInput, actorID, ip, ua string) (*models.Employee, error) {
+	app, err := s.apps.FindByID(tenantID, in.ApplicationID)
 	if err != nil || app.Candidate == nil {
 		return nil, ErrNotFound
 	}
 	cand := app.Candidate
-	if s.candidates.AlreadyEmployeeEmail(cand.Email) {
+	if s.candidates.AlreadyEmployeeEmail(tenantID, cand.Email) {
 		return nil, ErrCandidateAlreadyEmployee
 	}
 	code := in.EmployeeCode
 	if code == "" {
 		code = s.nextEmployeeCode()
 	}
-	emp, err := s.employees.Create(EmployeeInput{
+	emp, err := s.employees.Create(tenantID, EmployeeInput{
 		EmployeeCode:  code,
 		FirstName:     cand.FirstName,
 		LastName:      cand.LastName,
@@ -450,8 +472,8 @@ func (s *RecruitmentService) Hire(in HireInput, actorID, ip, ua string) (*models
 	if err != nil {
 		return nil, err
 	}
-	_ = s.apps.Update(app.ID, map[string]interface{}{"status": models.AppHired})
-	_ = s.candidates.Update(cand.ID, map[string]interface{}{"status": models.CandidateHired})
+	_ = s.apps.Update(tenantID, app.ID, map[string]interface{}{"status": models.AppHired})
+	_ = s.candidates.Update(tenantID, cand.ID, map[string]interface{}{"status": models.CandidateHired})
 	start := time.Now()
 	if in.JoiningDate != "" {
 		if d, err := time.Parse("2006-01-02", in.JoiningDate); err == nil {
@@ -459,6 +481,7 @@ func (s *RecruitmentService) Hire(in HireInput, actorID, ip, ua string) (*models
 		}
 	}
 	o := &models.Onboarding{
+		TenantID:    tenantID,
 		EmployeeID:  emp.ID,
 		CandidateID: &cand.ID,
 		StartDate:   datatypes.Date(start),
@@ -468,7 +491,7 @@ func (s *RecruitmentService) Hire(in HireInput, actorID, ip, ua string) (*models
 		return nil, err
 	}
 	if app.JobPost != nil && app.JobPost.Vacancies > 0 {
-		_ = s.jobs.Update(app.JobPost.ID, map[string]interface{}{"vacancies": app.JobPost.Vacancies - 1})
+		_ = s.jobs.Update(tenantID, app.JobPost.ID, map[string]interface{}{"vacancies": app.JobPost.Vacancies - 1})
 	}
 	s.audit.Record(actorID, models.ActionCreate, "employee", emp.ID, ip, ua, map[string]string{"hired_from_candidate": cand.ID})
 	s.audit.Record(actorID, models.ActionUpdate, "candidate", cand.ID, ip, ua, map[string]string{"status": "HIRED"})

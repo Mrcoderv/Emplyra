@@ -23,35 +23,35 @@ func (r *EmployeeRepository) Create(e *models.Employee) error {
 	return r.db.Create(e).Error
 }
 
-func (r *EmployeeRepository) Update(id string, fields map[string]interface{}) error {
-	return r.db.Model(&models.Employee{}).Where("id = ?", id).Updates(fields).Error
+func (r *EmployeeRepository) Update(tenantID, id string, fields map[string]interface{}) error {
+	return r.db.Model(&models.Employee{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(fields).Error
 }
 
-func (r *EmployeeRepository) Delete(id string) error {
-	return r.db.Delete(&models.Employee{}, "id = ?", id).Error
+func (r *EmployeeRepository) Delete(tenantID, id string) error {
+	return r.db.Delete(&models.Employee{}, "id = ? AND tenant_id = ?", id, tenantID).Error
 }
 
-func (r *EmployeeRepository) FindByID(id string) (*models.Employee, error) {
+func (r *EmployeeRepository) FindByID(tenantID, id string) (*models.Employee, error) {
 	var e models.Employee
-	err := r.db.Preload(employeePreloads).First(&e, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload(employeePreloads).First(&e, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &e, nil
 }
 
-func (r *EmployeeRepository) FindByCode(code string) (*models.Employee, error) {
+func (r *EmployeeRepository) FindByCode(tenantID, code string) (*models.Employee, error) {
 	var e models.Employee
-	err := r.db.Where("employee_code = ?", code).First(&e).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Where("employee_code = ?", code).First(&e).Error
 	if err != nil {
 		return nil, err
 	}
 	return &e, nil
 }
 
-func (r *EmployeeRepository) FindByEmail(email string) (*models.Employee, error) {
+func (r *EmployeeRepository) FindByEmail(tenantID, email string) (*models.Employee, error) {
 	var e models.Employee
-	err := r.db.Where("LOWER(email) = LOWER(?)", email).First(&e).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Where("LOWER(email) = LOWER(?)", email).First(&e).Error
 	if err != nil {
 		return nil, err
 	}
@@ -67,10 +67,10 @@ func (r *EmployeeRepository) FindByUserID(userID string) (*models.Employee, erro
 	return &e, nil
 }
 
-func (r *EmployeeRepository) List(p utils.Pagination, filter func(*gorm.DB) *gorm.DB, sortBy, sortOrder string) ([]models.Employee, int64, error) {
+func (r *EmployeeRepository) List(tenantID string, p utils.Pagination, filter func(*gorm.DB) *gorm.DB, sortBy, sortOrder string) ([]models.Employee, int64, error) {
 	var items []models.Employee
 	var total int64
-	q := r.db.Model(&models.Employee{})
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.Employee{})
 	if filter != nil {
 		q = filter(q)
 	}
@@ -83,12 +83,12 @@ func (r *EmployeeRepository) List(p utils.Pagination, filter func(*gorm.DB) *gor
 	return items, total, err
 }
 
-func (r *EmployeeRepository) CountByStatus() (map[models.EmployeeStatus]int64, error) {
+func (r *EmployeeRepository) CountByStatus(tenantID string) (map[models.EmployeeStatus]int64, error) {
 	rows := []struct {
 		Status models.EmployeeStatus
 		Count  int64
 	}{}
-	err := r.db.Model(&models.Employee{}).Select("status, COUNT(*) as count").Group("status").Scan(&rows).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Model(&models.Employee{}).Select("status, COUNT(*) as count").Group("status").Scan(&rows).Error
 	out := map[models.EmployeeStatus]int64{}
 	if err != nil {
 		return out, err
@@ -99,9 +99,9 @@ func (r *EmployeeRepository) CountByStatus() (map[models.EmployeeStatus]int64, e
 	return out, nil
 }
 
-func (r *EmployeeRepository) CountActive() (int64, error) {
+func (r *EmployeeRepository) CountActive(tenantID string) (int64, error) {
 	var n int64
-	err := r.db.Model(&models.Employee{}).Where("status = ?", models.EmployeeActive).Count(&n).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Model(&models.Employee{}).Where("status = ?", models.EmployeeActive).Count(&n).Error
 	return n, err
 }
 
@@ -111,9 +111,9 @@ func (r *EmployeeRepository) DirectReports(managerID string) ([]string, error) {
 	return ids, err
 }
 
-func (r *EmployeeRepository) ExistsByEmailExcluding(email, excludeID string) bool {
+func (r *EmployeeRepository) ExistsByEmailExcluding(tenantID, email, excludeID string) bool {
 	var n int64
-	q := r.db.Model(&models.Employee{}).Where("LOWER(email) = LOWER(?)", email)
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.Employee{}).Where("LOWER(email) = LOWER(?)", email)
 	if excludeID != "" {
 		q = q.Where("id <> ?", excludeID)
 	}
@@ -121,9 +121,9 @@ func (r *EmployeeRepository) ExistsByEmailExcluding(email, excludeID string) boo
 	return n > 0
 }
 
-func (r *EmployeeRepository) ExistsByCodeExcluding(code, excludeID string) bool {
+func (r *EmployeeRepository) ExistsByCodeExcluding(tenantID, code, excludeID string) bool {
 	var n int64
-	q := r.db.Model(&models.Employee{}).Where("employee_code = ?", code)
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.Employee{}).Where("employee_code = ?", code)
 	if excludeID != "" {
 		q = q.Where("id <> ?", excludeID)
 	}

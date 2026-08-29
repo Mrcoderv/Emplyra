@@ -19,15 +19,15 @@ func NewSalaryStructureRepository(db *gorm.DB) *SalaryStructureRepository {
 func (r *SalaryStructureRepository) Create(s *models.SalaryStructure) error {
 	return r.db.Create(s).Error
 }
-func (r *SalaryStructureRepository) Update(id string, fields map[string]interface{}) error {
-	return r.db.Model(&models.SalaryStructure{}).Where("id = ?", id).Updates(fields).Error
+func (r *SalaryStructureRepository) Update(tenantID, id string, fields map[string]interface{}) error {
+	return r.db.Model(&models.SalaryStructure{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(fields).Error
 }
-func (r *SalaryStructureRepository) Delete(id string) error {
-	return r.db.Delete(&models.SalaryStructure{}, "id = ?", id).Error
+func (r *SalaryStructureRepository) Delete(tenantID, id string) error {
+	return r.db.Scopes(TenantScope(tenantID)).Delete(&models.SalaryStructure{}, "id = ?", id).Error
 }
-func (r *SalaryStructureRepository) FindByID(id string) (*models.SalaryStructure, error) {
+func (r *SalaryStructureRepository) FindByID(tenantID, id string) (*models.SalaryStructure, error) {
 	var s models.SalaryStructure
-	err := r.db.Preload("Employee").First(&s, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Employee").First(&s, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -35,9 +35,9 @@ func (r *SalaryStructureRepository) FindByID(id string) (*models.SalaryStructure
 }
 
 // EffectiveFor returns the active salary structure for an employee on/after a date.
-func (r *SalaryStructureRepository) EffectiveFor(employeeID string, on datatypes.Date) (*models.SalaryStructure, error) {
+func (r *SalaryStructureRepository) EffectiveFor(tenantID, employeeID string, on datatypes.Date) (*models.SalaryStructure, error) {
 	var s models.SalaryStructure
-	err := r.db.Preload("Employee").
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Employee").
 		Where("employee_id = ? AND status = ? AND effective_from <= ?", employeeID, models.SalaryActive, on).
 		Order("effective_from DESC").First(&s).Error
 	if err != nil {
@@ -46,8 +46,8 @@ func (r *SalaryStructureRepository) EffectiveFor(employeeID string, on datatypes
 	return &s, nil
 }
 
-func (r *SalaryStructureRepository) List(employeeID string) ([]models.SalaryStructure, error) {
-	q := r.db.Preload("Employee").Order("effective_from DESC")
+func (r *SalaryStructureRepository) List(tenantID, employeeID string) ([]models.SalaryStructure, error) {
+	q := r.db.Scopes(TenantScope(tenantID)).Preload("Employee").Order("effective_from DESC")
 	if employeeID != "" {
 		q = q.Where("employee_id = ?", employeeID)
 	}
@@ -75,23 +75,23 @@ func (r *PayrollRepository) CreateMany(items []models.Payroll) error {
 	return r.db.Create(&items).Error
 }
 
-func (r *PayrollRepository) Update(id string, fields map[string]interface{}) error {
-	return r.db.Model(&models.Payroll{}).Where("id = ?", id).Updates(fields).Error
+func (r *PayrollRepository) Update(tenantID, id string, fields map[string]interface{}) error {
+	return r.db.Model(&models.Payroll{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(fields).Error
 }
 
-func (r *PayrollRepository) FindByID(id string) (*models.Payroll, error) {
+func (r *PayrollRepository) FindByID(tenantID, id string) (*models.Payroll, error) {
 	var p models.Payroll
-	err := r.db.Preload("Employee").First(&p, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Employee").First(&p, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &p, nil
 }
 
-func (r *PayrollRepository) List(p utils.Pagination, month, year int, employeeID, status, departmentID string) ([]models.Payroll, int64, error) {
+func (r *PayrollRepository) List(tenantID string, p utils.Pagination, month, year int, employeeID, status, departmentID string) ([]models.Payroll, int64, error) {
 	var items []models.Payroll
 	var total int64
-	q := r.db.Model(&models.Payroll{})
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.Payroll{})
 	if month > 0 {
 		q = q.Where("month = ?", month)
 	}
@@ -116,15 +116,15 @@ func (r *PayrollRepository) List(p utils.Pagination, month, year int, employeeID
 	return items, total, err
 }
 
-func (r *PayrollRepository) ExistsForMonth(month, year int) (bool, error) {
+func (r *PayrollRepository) ExistsForMonth(tenantID string, month, year int) (bool, error) {
 	var n int64
-	err := r.db.Model(&models.Payroll{}).Where("month = ? AND year = ?", month, year).Count(&n).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Model(&models.Payroll{}).Where("month = ? AND year = ?", month, year).Count(&n).Error
 	return n > 0, err
 }
 
-func (r *PayrollRepository) ExistsForEmployee(employeeID string, month, year int) (bool, error) {
+func (r *PayrollRepository) ExistsForEmployee(tenantID, employeeID string, month, year int) (bool, error) {
 	var n int64
-	err := r.db.Model(&models.Payroll{}).Where("employee_id = ? AND month = ? AND year = ?", employeeID, month, year).Count(&n).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Model(&models.Payroll{}).Where("employee_id = ? AND month = ? AND year = ?", employeeID, month, year).Count(&n).Error
 	return n > 0, err
 }
 
@@ -134,9 +134,9 @@ func (r *PayrollRepository) Tx(fn func(tx *gorm.DB) error) error {
 
 // ActiveEmployeesWithSalary returns active employees that have an active salary
 // structure effective on or before `on`.
-func (r *PayrollRepository) ActiveEmployeesWithSalary(on datatypes.Date) ([]models.Employee, error) {
+func (r *PayrollRepository) ActiveEmployeesWithSalary(tenantID string, on datatypes.Date) ([]models.Employee, error) {
 	var items []models.Employee
-	err := r.db.Model(&models.Employee{}).
+	err := r.db.Scopes(TenantScope(tenantID)).Model(&models.Employee{}).
 		Joins("JOIN salary_structures ss ON ss.employee_id = employees.id").
 		Where("employees.status = ? AND ss.status = ? AND ss.effective_from <= ?", models.EmployeeActive, models.SalaryActive, on).
 		Group("employees.id").
@@ -144,18 +144,18 @@ func (r *PayrollRepository) ActiveEmployeesWithSalary(on datatypes.Date) ([]mode
 	return items, err
 }
 
-func (r *PayrollRepository) EmployeeAttendanceOvertime(employeeID string, month, year int) (float64, error) {
+func (r *PayrollRepository) EmployeeAttendanceOvertime(tenantID, employeeID string, month, year int) (float64, error) {
 	var sum float64
-	err := r.db.Model(&models.Attendance{}).
+	err := r.db.Scopes(TenantScope(tenantID)).Model(&models.Attendance{}).
 		Where("employee_id = ? AND EXTRACT(MONTH FROM date) = ? AND EXTRACT(YEAR FROM date) = ?", employeeID, month, year).
 		Select("COALESCE(SUM(overtime), 0)").
 		Scan(&sum).Error
 	return sum, err
 }
 
-func (r *PayrollRepository) EmployeeByID(id string) (*models.Employee, error) {
+func (r *PayrollRepository) EmployeeByID(tenantID, id string) (*models.Employee, error) {
 	var e models.Employee
-	err := r.db.Preload("Department").First(&e, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Department").First(&e, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}

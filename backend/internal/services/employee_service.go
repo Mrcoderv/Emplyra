@@ -42,7 +42,7 @@ type EmployeeInput struct {
 	UserID           string
 }
 
-func (s *EmployeeService) List(p utils.Pagination, params struct {
+func (s *EmployeeService) List(tenantID string, p utils.Pagination, params struct {
 	Search, DepartmentID, DesignationID, ManagerID, Status, EmploymentType, SortBy, SortOrder string
 }) ([]models.Employee, int64, error) {
 	filter := func(q *gorm.DB) *gorm.DB {
@@ -67,11 +67,11 @@ func (s *EmployeeService) List(p utils.Pagination, params struct {
 		}
 		return q
 	}
-	return s.employees.List(p, filter, params.SortBy, params.SortOrder)
+	return s.employees.List(tenantID, p, filter, params.SortBy, params.SortOrder)
 }
 
-func (s *EmployeeService) Get(id string) (*models.Employee, error) {
-	e, err := s.employees.FindByID(id)
+func (s *EmployeeService) Get(tenantID, id string) (*models.Employee, error) {
+	e, err := s.employees.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -86,39 +86,40 @@ func (s *EmployeeService) GetByUserID(userID string) (*models.Employee, error) {
 	return e, nil
 }
 
-func (s *EmployeeService) validateAssignment(fields map[string]interface{}, excludeID string) error {
+func (s *EmployeeService) validateAssignment(tenantID string, fields map[string]interface{}, excludeID string) error {
 	if code, ok := fields["employee_code"].(string); ok && code != "" {
-		if s.employees.ExistsByCodeExcluding(code, excludeID) {
+		if s.employees.ExistsByCodeExcluding(tenantID, code, excludeID) {
 			return ErrDuplicate
 		}
 	}
 	if email, ok := fields["email"].(string); ok && email != "" {
-		if s.employees.ExistsByEmailExcluding(email, excludeID) {
+		if s.employees.ExistsByEmailExcluding(tenantID, email, excludeID) {
 			return ErrDuplicate
 		}
 	}
 	if depID, ok := fields["department_id"].(string); ok && depID != "" {
-		if _, err := s.departments.FindByID(depID); err != nil {
+		if _, err := s.departments.FindByID(tenantID, depID); err != nil {
 			return ErrNotFound
 		}
 	}
 	if desID, ok := fields["designation_id"].(string); ok && desID != "" {
-		if _, err := s.designations.FindByID(desID); err != nil {
+		if _, err := s.designations.FindByID(tenantID, desID); err != nil {
 			return ErrNotFound
 		}
 	}
 	return nil
 }
 
-func (s *EmployeeService) Create(in EmployeeInput, actorID, ip, ua string) (*models.Employee, error) {
+func (s *EmployeeService) Create(tenantID string, in EmployeeInput, actorID, ip, ua string) (*models.Employee, error) {
 	fields, err := buildEmployeeFields(in, true)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.validateAssignment(fields, ""); err != nil {
+	if err := s.validateAssignment(tenantID, fields, ""); err != nil {
 		return nil, err
 	}
 	emp := &models.Employee{
+		TenantID:         tenantID,
 		EmployeeCode:     fields["employee_code"].(string),
 		FirstName:        fields["first_name"].(string),
 		LastName:         fields["last_name"].(string),
@@ -158,8 +159,8 @@ func (s *EmployeeService) Create(in EmployeeInput, actorID, ip, ua string) (*mod
 	return emp, nil
 }
 
-func (s *EmployeeService) Update(id string, in EmployeeInput, actorID, ip, ua string) (*models.Employee, error) {
-	if _, err := s.employees.FindByID(id); err != nil {
+func (s *EmployeeService) Update(tenantID, id string, in EmployeeInput, actorID, ip, ua string) (*models.Employee, error) {
+	if _, err := s.employees.FindByID(tenantID, id); err != nil {
 		return nil, ErrNotFound
 	}
 	fields, err := buildEmployeeFields(in, false)
@@ -170,23 +171,23 @@ func (s *EmployeeService) Update(id string, in EmployeeInput, actorID, ip, ua st
 		fields["gender"] = in.Gender
 	}
 	if len(fields) == 0 {
-		return s.employees.FindByID(id)
+		return s.employees.FindByID(tenantID, id)
 	}
-	if err := s.validateAssignment(fields, id); err != nil {
+	if err := s.validateAssignment(tenantID, fields, id); err != nil {
 		return nil, err
 	}
-	if err := s.employees.Update(id, fields); err != nil {
+	if err := s.employees.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "employee", id, ip, ua, nil)
-	return s.employees.FindByID(id)
+	return s.employees.FindByID(tenantID, id)
 }
 
-func (s *EmployeeService) Delete(id, actorID, ip, ua string) error {
-	if _, err := s.employees.FindByID(id); err != nil {
+func (s *EmployeeService) Delete(tenantID, id, actorID, ip, ua string) error {
+	if _, err := s.employees.FindByID(tenantID, id); err != nil {
 		return ErrNotFound
 	}
-	if err := s.employees.Delete(id); err != nil {
+	if err := s.employees.Delete(tenantID, id); err != nil {
 		return err
 	}
 	s.audit.Record(actorID, models.ActionDelete, "employee", id, ip, ua, nil)

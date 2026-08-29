@@ -19,6 +19,7 @@ const (
 
 type Attendance struct {
 	BaseModel
+	TenantID     string           `gorm:"type:uuid;not null;index;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	EmployeeID   string           `gorm:"type:uuid;not null;index;uniqueIndex:idx_attendance_emp_date" json:"employee_id"`
 	Employee     *Employee        `gorm:"foreignKey:EmployeeID" json:"employee,omitempty"`
 	Date         datatypes.Date   `gorm:"not null;uniqueIndex:idx_attendance_emp_date" json:"date"`
@@ -33,6 +34,7 @@ type Attendance struct {
 
 type LeaveType struct {
 	BaseModel
+	TenantID    string `gorm:"type:uuid;not null;index;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	Name        string `gorm:"size:100;not null" json:"name"`
 	Code        string `gorm:"size:50;uniqueIndex;not null" json:"code"`
 	Description string `gorm:"size:500" json:"description"`
@@ -50,6 +52,7 @@ const (
 
 type Leave struct {
 	BaseModel
+	TenantID    string         `gorm:"type:uuid;not null;index;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	EmployeeID  string         `gorm:"type:uuid;not null;index" json:"employee_id"`
 	Employee    *Employee      `gorm:"foreignKey:EmployeeID" json:"employee,omitempty"`
 	LeaveTypeID string         `gorm:"type:uuid;not null;index" json:"leave_type_id"`
@@ -67,6 +70,7 @@ type Leave struct {
 
 type LeaveBalance struct {
 	BaseModel
+	TenantID    string `gorm:"type:uuid;not null;index;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	EmployeeID  string `gorm:"type:uuid;not null;index" json:"employee_id"`
 	LeaveTypeID string `gorm:"type:uuid;not null;index" json:"leave_type_id"`
 	Year        int    `gorm:"index;not null" json:"year"`
@@ -83,6 +87,7 @@ const (
 
 type Holiday struct {
 	BaseModel
+	TenantID    string         `gorm:"type:uuid;not null;index;default:00000000-0000-0000-0000-000000000001" json:"tenant_id"`
 	Name        string         `gorm:"size:150;not null" json:"name"`
 	Date        datatypes.Date `gorm:"not null;index" json:"date"`
 	Description string         `gorm:"size:500" json:"description"`

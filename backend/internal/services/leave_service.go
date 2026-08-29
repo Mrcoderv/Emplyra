@@ -30,11 +30,11 @@ func NewLeaveService(leaves *repositories.LeaveRepository, types *repositories.L
 	return &LeaveService{leaves: leaves, types: types, balances: balances, emp: emp, notify: notify, audit: audit}
 }
 
-func (s *LeaveService) Create(employeeID, leaveTypeID, start, end, reason string, actorID, ip, ua string) (*models.Leave, error) {
-	if _, err := s.emp.FindByID(employeeID); err != nil {
+func (s *LeaveService) Create(tenantID, employeeID, leaveTypeID, start, end, reason string, actorID, ip, ua string) (*models.Leave, error) {
+	if _, err := s.emp.FindByID(tenantID, employeeID); err != nil {
 		return nil, ErrNotFound
 	}
-	lt, err := s.types.FindByID(leaveTypeID)
+	lt, err := s.types.FindByID(tenantID, leaveTypeID)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -51,7 +51,7 @@ func (s *LeaveService) Create(employeeID, leaveTypeID, start, end, reason string
 	}
 	dstart := datatypes.Date(*st)
 	dend := datatypes.Date(*en)
-	overlaps, err := s.leaves.Overlaps(employeeID, dstart, dend, "")
+	overlaps, err := s.leaves.Overlaps(tenantID, employeeID, dstart, dend, "")
 	if err == nil && len(overlaps) > 0 {
 		return nil, ErrLeaveOverlap
 	}
@@ -59,10 +59,11 @@ func (s *LeaveService) Create(employeeID, leaveTypeID, start, end, reason string
 	if days < 1 {
 		return nil, errors.New("leave must include at least one working day")
 	}
-	if err := s.checkBalance(employeeID, leaveTypeID, st.Year(), days); err != nil {
+	if err := s.checkBalance(tenantID, employeeID, leaveTypeID, st.Year(), days); err != nil {
 		return nil, err
 	}
 	leave := &models.Leave{
+		TenantID:    tenantID,
 		EmployeeID:  employeeID,
 		LeaveTypeID: leaveTypeID,
 		StartDate:   dstart,
@@ -75,12 +76,12 @@ func (s *LeaveService) Create(employeeID, leaveTypeID, start, end, reason string
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionCreate, "leave", leave.ID, ip, ua, map[string]string{"employee_id": employeeID, "days": fmt.Sprintf("%d", days)})
-	s.notifyManager(employeeID, lt)
+	s.notifyManager(tenantID, employeeID, lt)
 	return leave, nil
 }
 
-func (s *LeaveService) checkBalance(employeeID, leaveTypeID string, year, days int) error {
-	bal, err := s.balances.Find(employeeID, leaveTypeID, year)
+func (s *LeaveService) checkBalance(tenantID, employeeID, leaveTypeID string, year, days int) error {
+	bal, err := s.balances.Find(tenantID, employeeID, leaveTypeID, year)
 	if err != nil {
 		return nil // no configured balance -> allowed
 	}
@@ -91,28 +92,28 @@ func (s *LeaveService) checkBalance(employeeID, leaveTypeID string, year, days i
 	return nil
 }
 
-func (s *LeaveService) List(p utils.Pagination, f repositories.LeaveFilter) ([]models.Leave, int64, error) {
-	return s.leaves.List(p, f)
+func (s *LeaveService) List(tenantID string, p utils.Pagination, f repositories.LeaveFilter) ([]models.Leave, int64, error) {
+	return s.leaves.List(tenantID, p, f)
 }
 
-func (s *LeaveService) Get(id string) (*models.Leave, error) {
-	l, err := s.leaves.FindByID(id)
+func (s *LeaveService) Get(tenantID, id string) (*models.Leave, error) {
+	l, err := s.leaves.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return l, nil
 }
 
-func (s *LeaveService) Approve(id, note string, actorID, ip, ua string) (*models.Leave, error) {
-	return s.decide(id, models.LeaveApproved, note, actorID, ip, ua)
+func (s *LeaveService) Approve(tenantID, id, note string, actorID, ip, ua string) (*models.Leave, error) {
+	return s.decide(tenantID, id, models.LeaveApproved, note, actorID, ip, ua)
 }
 
-func (s *LeaveService) Reject(id, note string, actorID, ip, ua string) (*models.Leave, error) {
-	return s.decide(id, models.LeaveRejected, note, actorID, ip, ua)
+func (s *LeaveService) Reject(tenantID, id, note string, actorID, ip, ua string) (*models.Leave, error) {
+	return s.decide(tenantID, id, models.LeaveRejected, note, actorID, ip, ua)
 }
 
-func (s *LeaveService) decide(id string, status models.LeaveStatus, note string, actorID, ip, ua string) (*models.Leave, error) {
-	leave, err := s.leaves.FindByID(id)
+func (s *LeaveService) decide(tenantID, id string, status models.LeaveStatus, note string, actorID, ip, ua string) (*models.Leave, error) {
+	leave, err := s.leaves.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -131,11 +132,12 @@ func (s *LeaveService) decide(id string, status models.LeaveStatus, note string,
 		action = models.ActionApprove
 	}
 	err = s.leaves.Tx(func(tx *gorm.DB) error {
-		if err := tx.Model(&models.Leave{}).Where("id = ?", id).Updates(fields).Error; err != nil {
+		if err := tx.Model(&models.Leave{}).Scopes(repositories.TenantScope(tenantID)).Where("id = ?", id).Updates(fields).Error; err != nil {
 			return err
 		}
 		if status == models.LeaveApproved && leave.LeaveType != nil && leave.LeaveType.IsPaid {
 			return tx.Model(&models.LeaveBalance{}).
+				Scopes(repositories.TenantScope(tenantID)).
 				Where("employee_id = ? AND leave_type_id = ? AND year = ?", leave.EmployeeID, leave.LeaveTypeID, time.Time(leave.StartDate).Year()).
 				UpdateColumn("used", gorm.Expr("used + ?", leave.Days)).Error
 		}
@@ -145,22 +147,22 @@ func (s *LeaveService) decide(id string, status models.LeaveStatus, note string,
 		return nil, err
 	}
 	s.audit.Record(actorID, action, "leave", leave.ID, ip, ua, map[string]string{"employee_id": leave.EmployeeID})
-	s.notifyEmployee(leave, status, id)
-	return s.leaves.FindByID(id)
+	s.notifyEmployee(tenantID, leave, status, id)
+	return s.leaves.FindByID(tenantID, id)
 }
 
-func (s *LeaveService) LeaveTypes() ([]models.LeaveType, error) {
-	return s.types.List()
+func (s *LeaveService) LeaveTypes(tenantID string) ([]models.LeaveType, error) {
+	return s.types.List(tenantID)
 }
 
-func (s *LeaveService) SetBalance(employeeID, leaveTypeID string, year, entitlement int, actorID, ip, ua string) (*models.LeaveBalance, error) {
+func (s *LeaveService) SetBalance(tenantID, employeeID, leaveTypeID string, year, entitlement int, actorID, ip, ua string) (*models.LeaveBalance, error) {
 	if year == 0 {
 		year = time.Now().Year()
 	}
-	if err := s.balances.InitializeIfMissing(employeeID, leaveTypeID, year, entitlement); err != nil {
+	if err := s.balances.InitializeIfMissing(tenantID, employeeID, leaveTypeID, year, entitlement); err != nil {
 		return nil, err
 	}
-	bal, err := s.balances.Find(employeeID, leaveTypeID, year)
+	bal, err := s.balances.Find(tenantID, employeeID, leaveTypeID, year)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -172,12 +174,12 @@ func (s *LeaveService) SetBalance(employeeID, leaveTypeID string, year, entitlem
 	return bal, nil
 }
 
-func (s *LeaveService) Balances(employeeID string, year int) ([]models.LeaveBalance, error) {
-	return s.balances.List(employeeID, year)
+func (s *LeaveService) Balances(tenantID, employeeID string, year int) ([]models.LeaveBalance, error) {
+	return s.balances.List(tenantID, employeeID, year)
 }
 
-func (s *LeaveService) notifyManager(employeeID string, lt *models.LeaveType) {
-	emp, err := s.emp.FindByID(employeeID)
+func (s *LeaveService) notifyManager(tenantID, employeeID string, lt *models.LeaveType) {
+	emp, err := s.emp.FindByID(tenantID, employeeID)
 	if err != nil || emp.Manager == nil {
 		return
 	}
@@ -190,8 +192,8 @@ func (s *LeaveService) notifyManager(employeeID string, lt *models.LeaveType) {
 	}
 }
 
-func (s *LeaveService) notifyEmployee(leave *models.Leave, status models.LeaveStatus, id string) {
-	emp, err := s.emp.FindByID(leave.EmployeeID)
+func (s *LeaveService) notifyEmployee(tenantID string, leave *models.Leave, status models.LeaveStatus, id string) {
+	emp, err := s.emp.FindByID(tenantID, leave.EmployeeID)
 	if err != nil || emp.User == nil || emp.UserID == nil {
 		return
 	}

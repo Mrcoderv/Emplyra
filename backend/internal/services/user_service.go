@@ -42,7 +42,7 @@ func (s *UserService) Create(in struct {
 	LastName  string
 	RoleID    string
 	Status    string
-}, actorID, ip, ua string) (*models.User, error) {
+}, callerScope, actorID, ip, ua string) (*models.User, error) {
 	email := auth.NormalizeEmail(in.Email)
 	if u, err := s.users.FindByEmail(email); err == nil && u != nil {
 		return nil, ErrDuplicate
@@ -50,8 +50,8 @@ func (s *UserService) Create(in struct {
 	if u, err := s.users.FindByUsername(in.Username); err == nil && u != nil {
 		return nil, ErrDuplicate
 	}
-	if _, err := s.roles.FindByID(in.RoleID); err != nil {
-		return nil, ErrNotFound
+	if err := s.ensureAssignableRole(in.RoleID, callerScope); err != nil {
+		return nil, err
 	}
 	hash, err := auth.HashPassword(in.Password)
 	if err != nil {
@@ -82,7 +82,7 @@ func (s *UserService) Update(id string, in struct {
 	LastName  string
 	RoleID    string
 	Status    string
-}, actorID, ip, ua string) (*models.User, error) {
+}, callerScope, actorID, ip, ua string) (*models.User, error) {
 	user, err := s.users.FindByID(id)
 	if err != nil {
 		return nil, ErrNotFound
@@ -95,8 +95,8 @@ func (s *UserService) Update(id string, in struct {
 		fields["last_name"] = in.LastName
 	}
 	if in.RoleID != "" {
-		if _, err := s.roles.FindByID(in.RoleID); err != nil {
-			return nil, ErrNotFound
+		if err := s.ensureAssignableRole(in.RoleID, callerScope); err != nil {
+			return nil, err
 		}
 		if user.RoleID != in.RoleID {
 			s.audit.Record(actorID, models.ActionRoleChange, "user", user.ID, ip, ua, map[string]string{"from_role": user.RoleID, "to_role": in.RoleID})
@@ -148,4 +148,21 @@ func (s *UserService) GetByID(id string) (*models.User, error) {
 		return nil, ErrNotFound
 	}
 	return u, nil
+}
+
+// ensureAssignableRole verifies a role may be assigned by a caller of the given
+// scope. Platform callers may assign any role; tenant callers may only assign
+// tenant-scope roles (platform roles are off-limits to tenant administrators).
+func (s *UserService) ensureAssignableRole(roleID, callerScope string) error {
+	role, err := s.roles.FindByID(roleID)
+	if err != nil {
+		return ErrNotFound
+	}
+	if callerScope == models.RoleScopePlatform {
+		return nil
+	}
+	if role.Scope != models.RoleScopeTenant {
+		return ErrRoleScopeMismatch
+	}
+	return nil
 }

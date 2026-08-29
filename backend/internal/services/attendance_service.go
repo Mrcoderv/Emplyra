@@ -28,13 +28,13 @@ func NewAttendanceService(att *repositories.AttendanceRepository, emp *repositor
 	return &AttendanceService{att: att, emp: emp, audit: audit}
 }
 
-func (s *AttendanceService) CheckIn(employeeID, remarks string, actorID, ip, ua string) (*models.Attendance, error) {
-	if err := s.employeesExist(employeeID); err != nil {
+func (s *AttendanceService) CheckIn(tenantID, employeeID, remarks string, actorID, ip, ua string) (*models.Attendance, error) {
+	if err := s.employeesExist(tenantID, employeeID); err != nil {
 		return nil, err
 	}
 	now := time.Now().UTC()
 	today := datatypes.Date(now)
-	existing, err := s.att.FindToday(employeeID, now)
+	existing, err := s.att.FindToday(tenantID, employeeID, now)
 	if err == nil && existing != nil {
 		return nil, ErrAlreadyCheckedIn
 	}
@@ -44,6 +44,7 @@ func (s *AttendanceService) CheckIn(employeeID, remarks string, actorID, ip, ua 
 		status = models.AttendanceLate
 	}
 	rec := &models.Attendance{
+		TenantID:     tenantID,
 		EmployeeID:   employeeID,
 		Date:         today,
 		CheckIn:      &now,
@@ -59,9 +60,9 @@ func (s *AttendanceService) CheckIn(employeeID, remarks string, actorID, ip, ua 
 	return rec, nil
 }
 
-func (s *AttendanceService) CheckOut(employeeID, remarks string, overtime float64, actorID, ip, ua string) (*models.Attendance, error) {
+func (s *AttendanceService) CheckOut(tenantID, employeeID, remarks string, overtime float64, actorID, ip, ua string) (*models.Attendance, error) {
 	now := time.Now().UTC()
-	existing, err := s.att.FindToday(employeeID, now)
+	existing, err := s.att.FindToday(tenantID, employeeID, now)
 	if err != nil {
 		return nil, ErrNoCheckIn
 	}
@@ -91,14 +92,14 @@ func (s *AttendanceService) CheckOut(employeeID, remarks string, overtime float6
 			fields["status"] = models.AttendanceHalfDay
 		}
 	}
-	if err := s.att.Update(existing.ID, fields); err != nil {
+	if err := s.att.Update(tenantID, existing.ID, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "attendance", existing.ID, "", "", map[string]string{"employee_id": employeeID, "action": "check_out"})
-	return s.att.FindByID(existing.ID)
+	return s.att.FindByID(tenantID, existing.ID)
 }
 
-func (s *AttendanceService) Update(id string, in struct {
+func (s *AttendanceService) Update(tenantID, id string, in struct {
 	CheckOut    *string
 	CheckIn     *string
 	Status      string
@@ -106,7 +107,7 @@ func (s *AttendanceService) Update(id string, in struct {
 	Overtime    float64
 	Remarks     string
 }, actorID, ip, ua string) (*models.Attendance, error) {
-	existing, err := s.att.FindByID(id)
+	existing, err := s.att.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -150,14 +151,14 @@ func (s *AttendanceService) Update(id string, in struct {
 	if len(fields) == 0 {
 		return existing, nil
 	}
-	if err := s.att.Update(id, fields); err != nil {
+	if err := s.att.Update(tenantID, id, fields); err != nil {
 		return nil, err
 	}
 	s.audit.Record(actorID, models.ActionUpdate, "attendance", id, ip, ua, nil)
-	return s.att.FindByID(id)
+	return s.att.FindByID(tenantID, id)
 }
 
-func (s *AttendanceService) List(p utils.Pagination, employeeID, from, to string, status string) ([]models.Attendance, int64, error) {
+func (s *AttendanceService) List(tenantID string, p utils.Pagination, employeeID, from, to string, status string) ([]models.Attendance, int64, error) {
 	f, err := parseDate(from)
 	if err != nil {
 		return nil, 0, err
@@ -173,19 +174,19 @@ func (s *AttendanceService) List(p utils.Pagination, employeeID, from, to string
 	if t != nil {
 		dto = datatypes.Date(*t)
 	}
-	return s.att.List(p, employeeID, dfrom, dto, status)
+	return s.att.List(tenantID, p, employeeID, dfrom, dto, status)
 }
 
-func (s *AttendanceService) Get(id string) (*models.Attendance, error) {
-	a, err := s.att.FindByID(id)
+func (s *AttendanceService) Get(tenantID, id string) (*models.Attendance, error) {
+	a, err := s.att.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return a, nil
 }
 
-func (s *AttendanceService) employeesExist(id string) error {
-	if _, err := s.emp.FindByID(id); err != nil {
+func (s *AttendanceService) employeesExist(tenantID, id string) error {
+	if _, err := s.emp.FindByID(tenantID, id); err != nil {
 		return errors.New("employee not found")
 	}
 	return nil

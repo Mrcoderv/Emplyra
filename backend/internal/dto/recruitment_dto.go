@@ -11,14 +11,19 @@ type JobPostRequest struct {
 }
 
 type CandidateRequest struct {
-	FirstName  string `json:"first_name" binding:"required,max=100"`
-	LastName   string `json:"last_name" binding:"max=100"`
-	Email      string `json:"email" binding:"required,email"`
-	Phone      string `json:"phone" binding:"max=30"`
-	Source     string `json:"source" binding:"max=100"`
-	Status     string `json:"status"`
-	Notes      string `json:"notes" binding:"max=2000"`
-	ResumePath string `json:"resume_path" binding:"max=500"`
+	FirstName   string `json:"first_name" binding:"required,max=100"`
+	LastName    string `json:"last_name" binding:"max=100"`
+	Email       string `json:"email" binding:"required,email"`
+	Phone       string `json:"phone" binding:"max=30"`
+	Source      string `json:"source" binding:"max=100"`
+	Status      string `json:"status"`
+	Notes       string `json:"notes" binding:"max=2000"`
+	ResumePath  string `json:"resume_path" binding:"max=500"`
+	Address     string `json:"address" binding:"max=500"`
+	DateOfBirth string `json:"date_of_birth" binding:"max=40"`
+	Education   string `json:"education" binding:"max=500"`
+	Experience  string `json:"experience" binding:"max=500"`
+	Skills      string `json:"skills" binding:"max=1000"`
 }
 
 type ApplicationRequest struct {

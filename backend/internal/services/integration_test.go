@@ -65,16 +65,16 @@ func TestLeaveApproveFlowIntegration(t *testing.T) {
 		t.Fatalf("create leave type: %v", err)
 	}
 
-	if _, err := svc.SetBalance(emp.ID, lt.ID, 2026, 10, actor, "", ""); err != nil {
+	if _, err := svc.SetBalance(models.DefaultTenantID, emp.ID, lt.ID, 2026, 10, actor, "", ""); err != nil {
 		t.Fatalf("set balance: %v", err)
 	}
-	bal, err := balRepo.Find(emp.ID, lt.ID, 2026)
+	bal, err := balRepo.Find(models.DefaultTenantID, emp.ID, lt.ID, 2026)
 	if err != nil || bal.Entitlement != 10 {
 		t.Fatalf("expected entitlement 10, got %+v err=%v", bal, err)
 	}
 
 	// Mon-Fri range spanning a weekend should compute business days only.
-	l, err := svc.Create(emp.ID, lt.ID, "2026-09-07", "2026-09-13", "vacation", actor, "", "")
+	l, err := svc.Create(models.DefaultTenantID, emp.ID, lt.ID, "2026-09-07", "2026-09-13", "vacation", actor, "", "")
 	if err != nil {
 		t.Fatalf("create leave: %v", err)
 	}
@@ -85,25 +85,25 @@ func TestLeaveApproveFlowIntegration(t *testing.T) {
 		t.Fatalf("expected PENDING, got %s", l.Status)
 	}
 
-	approved, err := svc.Approve(l.ID, "approved", actor, "", "")
+	approved, err := svc.Approve(models.DefaultTenantID, l.ID, "approved", actor, "", "")
 	if err != nil {
 		t.Fatalf("approve: %v", err)
 	}
 	if approved.Status != models.LeaveApproved {
 		t.Fatalf("expected APPROVED, got %s", approved.Status)
 	}
-	bal, err = balRepo.Find(emp.ID, lt.ID, 2026)
+	bal, err = balRepo.Find(models.DefaultTenantID, emp.ID, lt.ID, 2026)
 	if err != nil || bal.Used != 5 {
 		t.Fatalf("expected used=5, got %+v err=%v", bal, err)
 	}
 
 	// Overlapping leave must be rejected during create.
-	if _, err := svc.Create(emp.ID, lt.ID, "2026-09-08", "2026-09-09", "overlap", actor, "", ""); !errors.Is(err, ErrLeaveOverlap) {
+	if _, err := svc.Create(models.DefaultTenantID, emp.ID, lt.ID, "2026-09-08", "2026-09-09", "overlap", actor, "", ""); !errors.Is(err, ErrLeaveOverlap) {
 		t.Fatalf("expected ErrLeaveOverlap, got %v", err)
 	}
 
 	// Exceeding balance must be rejected.
-	if _, err := svc.Create(emp.ID, lt.ID, "2026-10-01", "2026-10-15", "too much", actor, "", ""); !errors.Is(err, ErrInsufficientLeaveBalance) {
+	if _, err := svc.Create(models.DefaultTenantID, emp.ID, lt.ID, "2026-10-01", "2026-10-15", "too much", actor, "", ""); !errors.Is(err, ErrInsufficientLeaveBalance) {
 		t.Fatalf("expected ErrInsufficientLeaveBalance, got %v", err)
 	}
 
@@ -124,7 +124,7 @@ func TestAttendanceCheckInOutIntegration(t *testing.T) {
 
 	emp := mustEmployee(t, db, "ATTIT01")
 
-	a, err := svc.CheckIn(emp.ID, "in", actor, "", "")
+	a, err := svc.CheckIn(models.DefaultTenantID, emp.ID, "in", actor, "", "")
 	if err != nil {
 		t.Fatalf("check-in: %v", err)
 	}
@@ -135,11 +135,11 @@ func TestAttendanceCheckInOutIntegration(t *testing.T) {
 		t.Fatal("expected attendance status")
 	}
 
-	if _, err := svc.CheckIn(emp.ID, "again", actor, "", ""); !errors.Is(err, ErrAlreadyCheckedIn) {
+	if _, err := svc.CheckIn(models.DefaultTenantID, emp.ID, "again", actor, "", ""); !errors.Is(err, ErrAlreadyCheckedIn) {
 		t.Fatalf("expected ErrAlreadyCheckedIn on duplicate, got %v", err)
 	}
 
-	out, err := svc.CheckOut(emp.ID, "out", 0, actor, "", "")
+	out, err := svc.CheckOut(models.DefaultTenantID, emp.ID, "out", 0, actor, "", "")
 	if err != nil {
 		t.Fatalf("check-out: %v", err)
 	}

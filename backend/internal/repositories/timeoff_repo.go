@@ -23,33 +23,33 @@ func (r *AttendanceRepository) Create(a *models.Attendance) error {
 	return r.db.Create(a).Error
 }
 
-func (r *AttendanceRepository) Update(id string, fields map[string]interface{}) error {
-	return r.db.Model(&models.Attendance{}).Where("id = ?", id).Updates(fields).Error
+func (r *AttendanceRepository) Update(tenantID, id string, fields map[string]interface{}) error {
+	return r.db.Model(&models.Attendance{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(fields).Error
 }
 
-func (r *AttendanceRepository) FindByID(id string) (*models.Attendance, error) {
+func (r *AttendanceRepository) FindByID(tenantID, id string) (*models.Attendance, error) {
 	var a models.Attendance
-	err := r.db.Preload("Employee").First(&a, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Employee").First(&a, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &a, nil
 }
 
-func (r *AttendanceRepository) FindToday(employeeID string, today time.Time) (*models.Attendance, error) {
+func (r *AttendanceRepository) FindToday(tenantID, employeeID string, today time.Time) (*models.Attendance, error) {
 	var a models.Attendance
 	date := datatypes.Date(today)
-	err := r.db.Where("employee_id = ? AND date = ?", employeeID, date).First(&a).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Where("employee_id = ? AND date = ?", employeeID, date).First(&a).Error
 	if err != nil {
 		return nil, err
 	}
 	return &a, nil
 }
 
-func (r *AttendanceRepository) List(p utils.Pagination, employeeID string, from, to datatypes.Date, status string) ([]models.Attendance, int64, error) {
+func (r *AttendanceRepository) List(tenantID string, p utils.Pagination, employeeID string, from, to datatypes.Date, status string) ([]models.Attendance, int64, error) {
 	var items []models.Attendance
 	var total int64
-	q := r.db.Model(&models.Attendance{})
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.Attendance{})
 	if employeeID != "" {
 		q = q.Where("employee_id = ?", employeeID)
 	}
@@ -69,9 +69,9 @@ func (r *AttendanceRepository) List(p utils.Pagination, employeeID string, from,
 	return items, total, err
 }
 
-func (r *AttendanceRepository) Between(employeeID string, from, to datatypes.Date) ([]models.Attendance, error) {
+func (r *AttendanceRepository) Between(tenantID, employeeID string, from, to datatypes.Date) ([]models.Attendance, error) {
 	var items []models.Attendance
-	err := r.db.Where("employee_id = ? AND date >= ? AND date <= ?", employeeID, from, to).Find(&items).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Where("employee_id = ? AND date >= ? AND date <= ?", employeeID, from, to).Find(&items).Error
 	return items, err
 }
 
@@ -91,23 +91,23 @@ func (r *LeaveRepository) Create(l *models.Leave) error {
 	return r.db.Create(l).Error
 }
 
-func (r *LeaveRepository) Update(id string, fields map[string]interface{}) error {
-	return r.db.Model(&models.Leave{}).Where("id = ?", id).Updates(fields).Error
+func (r *LeaveRepository) Update(tenantID, id string, fields map[string]interface{}) error {
+	return r.db.Model(&models.Leave{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(fields).Error
 }
 
-func (r *LeaveRepository) FindByID(id string) (*models.Leave, error) {
+func (r *LeaveRepository) FindByID(tenantID, id string) (*models.Leave, error) {
 	var l models.Leave
-	err := r.db.Preload("Employee").Preload("LeaveType").Preload("Reviewer").First(&l, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Preload("Employee").Preload("LeaveType").Preload("Reviewer").First(&l, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &l, nil
 }
 
-func (r *LeaveRepository) List(p utils.Pagination, f LeaveFilter) ([]models.Leave, int64, error) {
+func (r *LeaveRepository) List(tenantID string, p utils.Pagination, f LeaveFilter) ([]models.Leave, int64, error) {
 	var items []models.Leave
 	var total int64
-	q := r.db.Model(&models.Leave{})
+	q := r.db.Scopes(TenantScope(tenantID)).Model(&models.Leave{})
 	q = applyLeaveFilter(q, f)
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -117,9 +117,9 @@ func (r *LeaveRepository) List(p utils.Pagination, f LeaveFilter) ([]models.Leav
 	return items, total, err
 }
 
-func (r *LeaveRepository) Overlaps(employeeID string, start, end datatypes.Date, excludeID string) ([]models.Leave, error) {
+func (r *LeaveRepository) Overlaps(tenantID, employeeID string, start, end datatypes.Date, excludeID string) ([]models.Leave, error) {
 	var items []models.Leave
-	q := r.db.Where("employee_id = ? AND status IN ?", employeeID, []string{string(models.LeavePending), string(models.LeaveApproved)}).
+	q := r.db.Scopes(TenantScope(tenantID)).Where("employee_id = ? AND status IN ?", employeeID, []string{string(models.LeavePending), string(models.LeaveApproved)}).
 		Where("start_date <= ? AND end_date >= ?", end, start)
 	if excludeID != "" {
 		q = q.Where("id <> ?", excludeID)
@@ -167,15 +167,15 @@ func NewLeaveTypeRepository(db *gorm.DB) *LeaveTypeRepository {
 	return &LeaveTypeRepository{db: db}
 }
 
-func (r *LeaveTypeRepository) List() ([]models.LeaveType, error) {
+func (r *LeaveTypeRepository) List(tenantID string) ([]models.LeaveType, error) {
 	var items []models.LeaveType
-	err := r.db.Order("name ASC").Find(&items).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Order("name ASC").Find(&items).Error
 	return items, err
 }
 
-func (r *LeaveTypeRepository) FindByID(id string) (*models.LeaveType, error) {
+func (r *LeaveTypeRepository) FindByID(tenantID, id string) (*models.LeaveType, error) {
 	var lt models.LeaveType
-	err := r.db.First(&lt, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).First(&lt, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -190,18 +190,18 @@ func NewLeaveBalanceRepository(db *gorm.DB) *LeaveBalanceRepository {
 	return &LeaveBalanceRepository{db: db}
 }
 
-func (r *LeaveBalanceRepository) Find(employeeID, leaveTypeID string, year int) (*models.LeaveBalance, error) {
+func (r *LeaveBalanceRepository) Find(tenantID, employeeID, leaveTypeID string, year int) (*models.LeaveBalance, error) {
 	var b models.LeaveBalance
-	err := r.db.Where("employee_id = ? AND leave_type_id = ? AND year = ?", employeeID, leaveTypeID, year).First(&b).Error
+	err := r.db.Scopes(TenantScope(tenantID)).Where("employee_id = ? AND leave_type_id = ? AND year = ?", employeeID, leaveTypeID, year).First(&b).Error
 	if err != nil {
 		return nil, err
 	}
 	return &b, nil
 }
 
-func (r *LeaveBalanceRepository) List(employeeID string, year int) ([]models.LeaveBalance, error) {
+func (r *LeaveBalanceRepository) List(tenantID, employeeID string, year int) ([]models.LeaveBalance, error) {
 	var items []models.LeaveBalance
-	q := r.db.Order("created_at DESC")
+	q := r.db.Scopes(TenantScope(tenantID)).Order("created_at DESC")
 	if employeeID != "" {
 		q = q.Where("employee_id = ?", employeeID)
 	}
@@ -219,21 +219,22 @@ func (r *LeaveBalanceRepository) Upsert(b *models.LeaveBalance) error {
 	return r.db.Create(b).Error
 }
 
-func (r *LeaveBalanceRepository) IncrementUsed(employeeID, leaveTypeID string, year, days int) error {
+func (r *LeaveBalanceRepository) IncrementUsed(tenantID, employeeID, leaveTypeID string, year, days int) error {
 	return r.db.Model(&models.LeaveBalance{}).
+		Scopes(TenantScope(tenantID)).
 		Where("employee_id = ? AND leave_type_id = ? AND year = ?", employeeID, leaveTypeID, year).
 		UpdateColumn("used", gorm.Expr("used + ?", days)).Error
 }
 
-func (r *LeaveBalanceRepository) InitializeIfMissing(employeeID, leaveTypeID string, year, entitlement int) error {
+func (r *LeaveBalanceRepository) InitializeIfMissing(tenantID, employeeID, leaveTypeID string, year, entitlement int) error {
 	var count int64
-	r.db.Model(&models.LeaveBalance{}).
+	r.db.Scopes(TenantScope(tenantID)).Model(&models.LeaveBalance{}).
 		Where("employee_id = ? AND leave_type_id = ? AND year = ?", employeeID, leaveTypeID, year).
 		Count(&count)
 	if count > 0 {
 		return nil
 	}
-	b := &models.LeaveBalance{EmployeeID: employeeID, LeaveTypeID: leaveTypeID, Year: year, Entitlement: entitlement}
+	b := &models.LeaveBalance{TenantID: tenantID, EmployeeID: employeeID, LeaveTypeID: leaveTypeID, Year: year, Entitlement: entitlement}
 	return r.db.Create(b).Error
 }
 
@@ -247,25 +248,25 @@ func NewHolidayRepository(db *gorm.DB) *HolidayRepository {
 
 func (r *HolidayRepository) Create(h *models.Holiday) error { return r.db.Create(h).Error }
 
-func (r *HolidayRepository) Update(id string, fields map[string]interface{}) error {
-	return r.db.Model(&models.Holiday{}).Where("id = ?", id).Updates(fields).Error
+func (r *HolidayRepository) Update(tenantID, id string, fields map[string]interface{}) error {
+	return r.db.Model(&models.Holiday{}).Scopes(TenantScope(tenantID)).Where("id = ?", id).Updates(fields).Error
 }
 
-func (r *HolidayRepository) Delete(id string) error {
-	return r.db.Delete(&models.Holiday{}, "id = ?", id).Error
+func (r *HolidayRepository) Delete(tenantID, id string) error {
+	return r.db.Scopes(TenantScope(tenantID)).Delete(&models.Holiday{}, "id = ?", id).Error
 }
 
-func (r *HolidayRepository) FindByID(id string) (*models.Holiday, error) {
+func (r *HolidayRepository) FindByID(tenantID, id string) (*models.Holiday, error) {
 	var h models.Holiday
-	err := r.db.First(&h, "id = ?", id).Error
+	err := r.db.Scopes(TenantScope(tenantID)).First(&h, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &h, nil
 }
 
-func (r *HolidayRepository) List(from, to datatypes.Date, status string) ([]models.Holiday, error) {
-	q := r.db.Order("date ASC")
+func (r *HolidayRepository) List(tenantID string, from, to datatypes.Date, status string) ([]models.Holiday, error) {
+	q := r.db.Scopes(TenantScope(tenantID)).Order("date ASC")
 	if !time.Time(from).IsZero() {
 		q = q.Where("date >= ?", from)
 	}

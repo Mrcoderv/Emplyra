@@ -78,7 +78,7 @@ func (h *PerformanceHandler) CreateGoal(c *gin.Context) {
 	}
 	req.EmployeeID = setDefault()
 	a := middleware.MustPrincipal(c)
-	g, err := h.svc.CreateGoal(services.GoalInput{EmployeeID: req.EmployeeID, Title: req.Title, Description: req.Description, TargetDate: req.TargetDate, Weight: req.Weight, Status: req.Status}, a.UserID, clientIP(c), userAgent(c))
+	g, err := h.svc.CreateGoal(middleware.TenantID(c), services.GoalInput{EmployeeID: req.EmployeeID, Title: req.Title, Description: req.Description, TargetDate: req.TargetDate, Weight: req.Weight, Status: req.Status}, a.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -93,7 +93,7 @@ func (h *PerformanceHandler) UpdateGoal(c *gin.Context) {
 		return
 	}
 	a := middleware.MustPrincipal(c)
-	g, err := h.svc.UpdateGoal(c.Param("id"), services.GoalInput{Title: req.Title, Description: req.Description, TargetDate: req.TargetDate, Weight: req.Weight, Status: req.Status}, a.UserID, clientIP(c), userAgent(c))
+	g, err := h.svc.UpdateGoal(middleware.TenantID(c), c.Param("id"), services.GoalInput{Title: req.Title, Description: req.Description, TargetDate: req.TargetDate, Weight: req.Weight, Status: req.Status}, a.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -103,7 +103,7 @@ func (h *PerformanceHandler) UpdateGoal(c *gin.Context) {
 
 func (h *PerformanceHandler) DeleteGoal(c *gin.Context) {
 	a := middleware.MustPrincipal(c)
-	if err := h.svc.DeleteGoal(c.Param("id"), a.UserID, clientIP(c), userAgent(c)); err != nil {
+	if err := h.svc.DeleteGoal(middleware.TenantID(c), c.Param("id"), a.UserID, clientIP(c), userAgent(c)); err != nil {
 		mapServiceError(c, err)
 		return
 	}
@@ -111,7 +111,7 @@ func (h *PerformanceHandler) DeleteGoal(c *gin.Context) {
 }
 
 func (h *PerformanceHandler) GetGoal(c *gin.Context) {
-	g, err := h.svc.Goal(c.Param("id"))
+	g, err := h.svc.Goal(middleware.TenantID(c), c.Param("id"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -121,7 +121,7 @@ func (h *PerformanceHandler) GetGoal(c *gin.Context) {
 
 func (h *PerformanceHandler) ListGoals(c *gin.Context) {
 	p := utils.NewPagination(c.Query("page"), c.Query("page_size"))
-	items, total, err := h.svc.Goals(p, readScope(c, h.emp), c.Query("status"))
+	items, total, err := h.svc.Goals(middleware.TenantID(c), p, readScope(c, h.emp), c.Query("status"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -141,7 +141,7 @@ func (h *PerformanceHandler) CreateKPI(c *gin.Context) {
 		req.EmployeeID = middleware.EmployeeID(c)
 	}
 	a := middleware.MustPrincipal(c)
-	k, err := h.svc.CreateKPI(services.KPIInput{EmployeeID: req.EmployeeID, Name: req.Name, Description: req.Description, Target: req.Target, Actual: req.Actual, Unit: req.Unit, Weight: req.Weight, Period: req.Period, Score: req.Score}, a.UserID, clientIP(c), userAgent(c))
+	k, err := h.svc.CreateKPI(middleware.TenantID(c), services.KPIInput{EmployeeID: req.EmployeeID, Name: req.Name, Description: req.Description, Target: req.Target, Actual: req.Actual, Unit: req.Unit, Weight: req.Weight, Period: req.Period, Score: req.Score}, a.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -156,7 +156,7 @@ func (h *PerformanceHandler) UpdateKPI(c *gin.Context) {
 		return
 	}
 	a := middleware.MustPrincipal(c)
-	k, err := h.svc.UpdateKPI(c.Param("id"), services.KPIInput{Name: req.Name, Description: req.Description, Target: req.Target, Actual: req.Actual, Unit: req.Unit, Weight: req.Weight, Period: req.Period, Score: req.Score}, a.UserID, clientIP(c), userAgent(c))
+	k, err := h.svc.UpdateKPI(middleware.TenantID(c), c.Param("id"), services.KPIInput{Name: req.Name, Description: req.Description, Target: req.Target, Actual: req.Actual, Unit: req.Unit, Weight: req.Weight, Period: req.Period, Score: req.Score}, a.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -166,7 +166,7 @@ func (h *PerformanceHandler) UpdateKPI(c *gin.Context) {
 
 func (h *PerformanceHandler) DeleteKPI(c *gin.Context) {
 	a := middleware.MustPrincipal(c)
-	if err := h.svc.DeleteKPI(c.Param("id"), a.UserID, clientIP(c), userAgent(c)); err != nil {
+	if err := h.svc.DeleteKPI(middleware.TenantID(c), c.Param("id"), a.UserID, clientIP(c), userAgent(c)); err != nil {
 		mapServiceError(c, err)
 		return
 	}
@@ -174,7 +174,7 @@ func (h *PerformanceHandler) DeleteKPI(c *gin.Context) {
 }
 
 func (h *PerformanceHandler) GetKPI(c *gin.Context) {
-	k, err := h.svc.KPI(c.Param("id"))
+	k, err := h.svc.KPI(middleware.TenantID(c), c.Param("id"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -184,7 +184,7 @@ func (h *PerformanceHandler) GetKPI(c *gin.Context) {
 
 func (h *PerformanceHandler) ListKPIs(c *gin.Context) {
 	p := utils.NewPagination(c.Query("page"), c.Query("page_size"))
-	items, total, err := h.svc.KPIs(p, readScope(c, h.emp), c.Query("period"))
+	items, total, err := h.svc.KPIs(middleware.TenantID(c), p, readScope(c, h.emp), c.Query("period"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -201,7 +201,7 @@ func (h *PerformanceHandler) CreateReview(c *gin.Context) {
 		return
 	}
 	a := middleware.MustPrincipal(c)
-	r, err := h.svc.CreateReview(services.ReviewInput{EmployeeID: req.EmployeeID, ReviewerID: req.ReviewerID, Period: req.Period, DueDate: req.DueDate}, a.UserID, clientIP(c), userAgent(c))
+	r, err := h.svc.CreateReview(middleware.TenantID(c), services.ReviewInput{EmployeeID: req.EmployeeID, ReviewerID: req.ReviewerID, Period: req.Period, DueDate: req.DueDate}, a.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -216,7 +216,7 @@ func (h *PerformanceHandler) SubmitReview(c *gin.Context) {
 		return
 	}
 	a := middleware.MustPrincipal(c)
-	r, err := h.svc.SubmitReview(c.Param("id"), req.SelfEvaluation, req.ManagerFeedback, req.Status, req.Score, a.UserID, clientIP(c), userAgent(c))
+	r, err := h.svc.SubmitReview(middleware.TenantID(c), c.Param("id"), req.SelfEvaluation, req.ManagerFeedback, req.Status, req.Score, a.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -225,7 +225,7 @@ func (h *PerformanceHandler) SubmitReview(c *gin.Context) {
 }
 
 func (h *PerformanceHandler) GetReview(c *gin.Context) {
-	r, err := h.svc.Review(c.Param("id"))
+	r, err := h.svc.Review(middleware.TenantID(c), c.Param("id"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -235,7 +235,7 @@ func (h *PerformanceHandler) GetReview(c *gin.Context) {
 
 func (h *PerformanceHandler) ListReviews(c *gin.Context) {
 	p := utils.NewPagination(c.Query("page"), c.Query("page_size"))
-	items, total, err := h.svc.Reviews(p, readScope(c, h.emp), c.Query("reviewer_id"), c.Query("status"))
+	items, total, err := h.svc.Reviews(middleware.TenantID(c), p, readScope(c, h.emp), c.Query("reviewer_id"), c.Query("status"))
 	if err != nil {
 		mapServiceError(c, err)
 		return

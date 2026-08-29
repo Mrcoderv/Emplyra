@@ -8,6 +8,7 @@ import (
 	"github.com/emplyra/backend/internal/auth"
 	"github.com/emplyra/backend/internal/config"
 	"github.com/emplyra/backend/internal/database"
+	"github.com/emplyra/backend/internal/google"
 	"github.com/emplyra/backend/internal/notifications"
 	"github.com/emplyra/backend/internal/repositories"
 	"github.com/emplyra/backend/internal/routes"
@@ -49,6 +50,17 @@ func main() {
 	notify := notifications.New(db)
 	jwt := auth.NewJWTManager(cfg.JWTSecret, cfg.AccessTokenTTL)
 
+	// --- Google integration ---
+	googleCfg := google.ConfigFromEnv()
+	if googleCfg.TokenKey == "" {
+		googleCfg.TokenKey = cfg.JWTSecret
+	}
+	oauthTokenRepo := repositories.NewGoogleOAuthTokenRepository(db)
+	tokenManager := google.NewTokenManager(googleCfg, oauthTokenRepo)
+	sheetsClient := google.NewSheetsClient(tokenManager)
+	googleFormRepo := repositories.NewGoogleFormIntegrationRepository(db)
+	googleFormRespRepo := repositories.NewGoogleFormResponseRepository(db)
+
 	// --- Repositories ---
 	userRepo := repositories.NewUserRepository(db)
 	roleRepo := repositories.NewRoleRepository(db)
@@ -77,9 +89,10 @@ func main() {
 	enrollRepo := repositories.NewEnrollmentRepository(db)
 	docRepo := repositories.NewDocumentRepository(db)
 	auditLogRepo := repositories.NewAuditLogRepository(db)
+	tenantRepo := repositories.NewTenantRepository(db)
 
 	// --- Services ---
-	authSvc := services.NewAuthService(userRepo, tokenRepo, jwt, cfg, audit)
+	authSvc := services.NewAuthService(userRepo, tokenRepo, tenantRepo, jwt, cfg, audit)
 	userSvc := services.NewUserService(userRepo, roleRepo, audit)
 	roleSvc := services.NewRoleService(roleRepo, permRepo, audit)
 	empSvc := services.NewEmployeeService(empRepo, deptRepo, desigRepo, audit)
@@ -95,11 +108,14 @@ func main() {
 	trainSvc := services.NewTrainingService(trainRepo, schedRepo, enrollRepo, empRepo, notify, audit)
 	docSvc := services.NewDocumentService(docRepo, empRepo, cfg, audit)
 	reportSvc := services.NewReportService(db)
+	tenantSvc := services.NewTenantService(db, tenantRepo, userRepo, roleRepo, audit)
+	googleFormSvc := services.NewGoogleFormService(googleFormRepo, googleFormRespRepo, oauthTokenRepo, sheetsClient, tokenManager, googleCfg.SuccessRedirect, recruitSvc, notify, audit)
 
 	router := routes.NewRouter(routes.Deps{
 		JWT:          jwt,
 		UserRepo:     userRepo,
 		EmployeeRepo: empRepo,
+		TenantRepo:   tenantRepo,
 
 		AccessSvc:      authSvc,
 		UserSvc:        userSvc,
@@ -113,12 +129,14 @@ func main() {
 		SalarySvc:      salarySvc,
 		PayrollSvc:     payrollSvc,
 		RecruitSvc:     recruitSvc,
+		GoogleFormSvc:  googleFormSvc,
 		PerformanceSvc: perfSvc,
 		TrainingSvc:    trainSvc,
 		DocumentSvc:    docSvc,
 		ReportSvc:      reportSvc,
 		AuditLogs:      auditLogRepo,
 		Notify:         notify,
+		TenantSvc:      tenantSvc,
 	})
 
 	slog.Info("server starting", "port", cfg.Port, "env", cfg.Environment)

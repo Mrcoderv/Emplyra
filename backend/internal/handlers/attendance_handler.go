@@ -30,7 +30,7 @@ func (h *AttendanceHandler) CheckIn(c *gin.Context) {
 		return
 	}
 	actor := middleware.MustPrincipal(c)
-	a, err := h.svc.CheckIn(employeeID, req.Remarks, actor.UserID, clientIP(c), userAgent(c))
+	a, err := h.svc.CheckIn(middleware.TenantID(c), employeeID, req.Remarks, actor.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -49,7 +49,7 @@ func (h *AttendanceHandler) CheckOut(c *gin.Context) {
 		return
 	}
 	actor := middleware.MustPrincipal(c)
-	a, err := h.svc.CheckOut(employeeID, req.Remarks, req.Overtime, actor.UserID, clientIP(c), userAgent(c))
+	a, err := h.svc.CheckOut(middleware.TenantID(c), employeeID, req.Remarks, req.Overtime, actor.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -71,7 +71,7 @@ func (h *AttendanceHandler) List(c *gin.Context) {
 		}
 	}
 	pg := utils.NewPagination(params.Page, params.PageSize)
-	items, total, err := h.svc.List(pg, employeeID, params.From, params.To, params.Status)
+	items, total, err := h.svc.List(middleware.TenantID(c), pg, employeeID, params.From, params.To, params.Status)
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -80,7 +80,7 @@ func (h *AttendanceHandler) List(c *gin.Context) {
 }
 
 func (h *AttendanceHandler) Get(c *gin.Context) {
-	a, err := h.svc.Get(c.Param("id"))
+	a, err := h.svc.Get(middleware.TenantID(c), c.Param("id"))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -103,7 +103,7 @@ func (h *AttendanceHandler) Update(c *gin.Context) {
 		return
 	}
 	actor := middleware.MustPrincipal(c)
-	a, err := h.svc.Update(c.Param("id"), struct {
+	a, err := h.svc.Update(middleware.TenantID(c), c.Param("id"), struct {
 		CheckOut    *string
 		CheckIn     *string
 		Status      string
