@@ -12,9 +12,23 @@ function initials(u?:CurrentUser|null){return u?`${u.first_name?.[0]||''}${u.las
 function dateLabel(){return new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
 function greeting(){const h=new Date().getHours();return h<12?'Good morning':h<18?'Good afternoon':'Good evening'}
 export default function EmplyraDashboard(){
- const {user,login:signIn,logout:signOut,tenant,tenantSuspended}=useAuth(),[summary,setSummary]=useState<DashboardSummary|null>(null),[employees,setEmployees]=useState<Employee[]>([]),[active,setActive]=useState('Dashboard'),[search,setSearch]=useState(''),[loginOpen,setLoginOpen]=useState(false),[mobileOpen,setMobileOpen]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(''),[credentials,setCredentials]=useState({identifier:'',password:''})
+ const {status:authStatus,user,login:signIn,logout:signOut,tenant,tenantSuspended}=useAuth(),[summary,setSummary]=useState<DashboardSummary|null>(null),[employees,setEmployees]=useState<Employee[]>([]),[active,setActive]=useState('Dashboard'),[search,setSearch]=useState(''),[loginOpen,setLoginOpen]=useState(false),[mobileOpen,setMobileOpen]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(''),[credentials,setCredentials]=useState({identifier:'',password:''})
  const current=modules.find(m=>m.label===active)!
- useEffect(()=>{Promise.all([api.dashboard(),api.employees()]).then(([d,e])=>{setSummary(d);setEmployees(e.items||[])}).catch(e=>setError(e.message)).finally(()=>setLoading(false))},[])
+ useEffect(()=>{
+  if (authStatus !== 'authenticated') {
+   setLoading(authStatus === 'loading')
+   if (authStatus === 'unauthenticated') { setSummary(null); setEmployees([]); setError('') }
+   return
+  }
+  let cancelled = false
+  setLoading(true)
+  setError('')
+  Promise.all([api.dashboard(),api.employees(1, 10, search)])
+   .then(([d,e])=>{ if (!cancelled) { setSummary(d); setEmployees(e.items||[]) } })
+   .catch(e=>{ if (!cancelled) setError(e instanceof Error ? e.message : 'Unable to load workspace data') })
+   .finally(()=>{ if (!cancelled) setLoading(false) })
+  return ()=>{ cancelled = true }
+ },[authStatus, search])
  const filtered=useMemo(()=>employees.filter(e=>`${e.first_name} ${e.last_name} ${e.email||''}`.toLowerCase().includes(search.toLowerCase())),[employees,search])
  async function login(ev:React.FormEvent){ev.preventDefault();setError('');try{await signIn(credentials.identifier,credentials.password);setLoginOpen(false)}catch(e){setError(e instanceof Error?e.message:'Unable to sign in')}}
  async function logout(){await signOut()}

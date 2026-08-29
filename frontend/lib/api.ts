@@ -64,17 +64,25 @@ async function request<T>(path: string, init: RequestInit = {}, canRefresh = tru
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
   if (tenantId) headers.set('X-Tenant-ID', tenantId)
   const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers, cache: 'no-store' })
-  const payload = await response.json().catch(() => ({})) as ApiEnvelope<T>
+  const payload = await response.json().catch(() => null) as ApiEnvelope<T> | null
   if (response.status === 401 && canRefresh && refreshToken) {
     const refreshed = await request<LoginResult>('/auth/refresh', { method: 'POST', body: JSON.stringify({ refresh_token: refreshToken }) }, false)
     persist(refreshed.tokens)
     return request<T>(path, init, false)
   }
-  if (!response.ok || payload.success === false) throw new Error(payload.message || `Request failed with status ${response.status}`)
+  if (!response.ok || payload?.success === false) {
+    const message = payload?.message || (Array.isArray(payload?.errors) ? payload.errors.join(', ') : undefined)
+    throw new Error(message || `Request failed with status ${response.status}`)
+  }
+  if (!payload || !('data' in payload)) throw new Error(`Request failed with status ${response.status}`)
   return payload.data
 }
 
-const list = <T,>(path: string, page = 1, pageSize = 10, search = '') => request<ListResponse<T>>(`${path}?page=${page}&page_size=${pageSize}${search ? `&search=${encodeURIComponent(search)}` : ''}`)
+const list = <T,>(path: string, page = 1, pageSize = 10, search = '') => {
+  const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) })
+  if (search.trim()) params.set('search', search.trim())
+  return request<ListResponse<T>>(`${path}?${params.toString()}`)
+}
 
 export const api = {
   login: (identifier: string, password: string) => request<LoginResult>('/auth/login', { method: 'POST', body: JSON.stringify({ identifier, password }) }, false),
