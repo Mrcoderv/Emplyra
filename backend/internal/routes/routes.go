@@ -18,6 +18,7 @@ import (
 
 // Deps carries every dependency the router needs. Wiring happens once in main.
 type Deps struct {
+	AllowedOrigins []string
 	JWT          *auth.JWTManager
 	UserRepo     *repositories.UserRepository
 	EmployeeRepo *repositories.EmployeeRepository
@@ -50,10 +51,14 @@ func NewRouter(d Deps) *gin.Engine {
 	r.Use(gin.Recovery())
 	r.Use(middleware.RequestLogger())
 	r.Use(middleware.SecurityHeaders())
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		origins := d.AllowedOrigins
+		if len(origins) == 0 {
+			origins = []string{"http://localhost:3000"}
+		}
+		r.Use(cors.New(cors.Config{
+			AllowOrigins:     origins,
+			AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+			AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Tenant-ID"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: false,
 		MaxAge:           12 * time.Hour,

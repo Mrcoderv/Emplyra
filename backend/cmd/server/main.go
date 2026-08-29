@@ -112,6 +112,7 @@ func main() {
 	googleFormSvc := services.NewGoogleFormService(googleFormRepo, googleFormRespRepo, oauthTokenRepo, sheetsClient, tokenManager, googleCfg.SuccessRedirect, recruitSvc, notify, audit)
 
 	router := routes.NewRouter(routes.Deps{
+		AllowedOrigins: cfg.AllowedOrigins,
 		JWT:          jwt,
 		UserRepo:     userRepo,
 		EmployeeRepo: empRepo,
