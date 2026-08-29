@@ -1,0 +1,21 @@
+# Binaries
+/backend/server
+/backend/app
+/dist/
+
+# Env & secrets
+/backend/.env
+*.local
+
+# Uploads
+/backend/uploads/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Go
+*.test
+*.out
+coverage.*

@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:16
+    container_name: emplyra-db
+    environment:
+      POSTGRES_USER: emplyra
+      POSTGRES_PASSWORD: emplyra_password
+      POSTGRES_DB: emplyra
+    ports:
+      - "5432:5432"
+    volumes:
+      - emplyra_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U emplyra -d emplyra"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: emplyra-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      PORT: "8080"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: emplyra
+      DB_PASSWORD: emplyra_password
+      DB_NAME: emplyra
+      DB_SSLMODE: disable
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret}
+      ACCESS_TOKEN_TTL: 2h
+      REFRESH_TOKEN_TTL: 168h
+      SEED_SUPER_ADMIN: "true"
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-admin@emplyra.local}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-ChangeMe123!}
+      UPLOAD_DIR: /app/uploads
+      MAX_UPLOAD_MB: "10"
+    ports:
+      - "8080:8080"
+    volumes:
+      - emplyra_uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  emplyra_pgdata:
+  emplyra_uploads:
