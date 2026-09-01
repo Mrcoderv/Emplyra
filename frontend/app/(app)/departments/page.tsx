@@ -1,3 +1,6 @@
-import ModulePlaceholder from '@/components/module-placeholder'
-import { navigation } from '@/lib/navigation'
-export default function Page(){return <ModulePlaceholder item={navigation.find(i=>i.href==='/departments')!}/>}
+import CoreModulePage from '@/components/core-module-page'
+
+export default function DepartmentsPage() {
+  return <CoreModulePage module="departments" />
+}
+
