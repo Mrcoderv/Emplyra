@@ -17,7 +17,9 @@ func NewEmployeeRepository(db *gorm.DB) *EmployeeRepository {
 	return &EmployeeRepository{db: db}
 }
 
-const employeePreloads = "Department,Designation,Manager,User"
+func preloadEmployee(db *gorm.DB) *gorm.DB {
+	return db.Preload("Department").Preload("Designation").Preload("Manager").Preload("User")
+}
 
 func (r *EmployeeRepository) Create(e *models.Employee) error {
 	return r.db.Create(e).Error
@@ -28,12 +30,12 @@ func (r *EmployeeRepository) Update(tenantID, id string, fields map[string]inter
 }
 
 func (r *EmployeeRepository) Delete(tenantID, id string) error {
-	return r.db.Delete(&models.Employee{}, "id = ? AND tenant_id = ?", id, tenantID).Error
+	return r.db.Scopes(TenantScope(tenantID)).Delete(&models.Employee{}, "id = ?", id).Error
 }
 
 func (r *EmployeeRepository) FindByID(tenantID, id string) (*models.Employee, error) {
 	var e models.Employee
-	err := r.db.Scopes(TenantScope(tenantID)).Preload(employeePreloads).First(&e, "id = ?", id).Error
+	err := preloadEmployee(r.db.Scopes(TenantScope(tenantID))).First(&e, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +62,7 @@ func (r *EmployeeRepository) FindByEmail(tenantID, email string) (*models.Employ
 
 func (r *EmployeeRepository) FindByUserID(userID string) (*models.Employee, error) {
 	var e models.Employee
-	err := r.db.Where("user_id = ?", userID).First(&e).Error
+	err := preloadEmployee(r.db).Where("user_id = ?", userID).First(&e).Error
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +80,8 @@ func (r *EmployeeRepository) List(tenantID string, p utils.Pagination, filter fu
 		return nil, 0, err
 	}
 	order := sortClause(sortBy, sortOrder)
-	q = q.Order(order).Offset(p.Offset).Limit(p.Limit)
-	err := q.Preload(employeePreloads).Find(&items).Error
+	q = preloadEmployee(q.Order(order).Offset(p.Offset).Limit(p.Limit))
+	err := q.Find(&items).Error
 	return items, total, err
 }
 

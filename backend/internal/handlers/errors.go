@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -75,6 +76,7 @@ func mapServiceError(c *gin.Context, err error) bool {
 		errors.Is(err, services.ErrGoogleTargetInvalid), errors.Is(err, services.ErrGoogleOAuthStateInvalid):
 		responses.Error(c, http.StatusUnprocessableEntity, err.Error(), nil)
 	default:
+		slog.Error("unhandled service error", "err", err, "path", c.Request.URL.Path)
 		responses.Error(c, http.StatusInternalServerError, "internal server error", nil)
 	}
 	return true

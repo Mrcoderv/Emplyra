@@ -39,7 +39,7 @@ type EmployeeUpdateRequest struct {
 	EmployeeCode     string `json:"employee_code" binding:"max=50"`
 	FirstName        string `json:"first_name" binding:"max=100"`
 	LastName         string `json:"last_name" binding:"max=100"`
-	Email            string `json:"email" binding:"email"`
+	Email            string `json:"email" binding:"omitempty,email"`
 	Phone            string `json:"phone" binding:"max=30"`
 	DateOfBirth      string `json:"date_of_birth"`
 	Gender           string `json:"gender"`
