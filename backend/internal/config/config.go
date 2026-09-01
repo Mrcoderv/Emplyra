@@ -42,6 +42,7 @@ type Config struct {
 
 func Load() (*Config, error) {
 	_ = godotenv.Load()
+	_ = godotenv.Load("backend/.env")
 
 	cfg := &Config{
 		Environment:        os.Getenv("APP_ENV"),

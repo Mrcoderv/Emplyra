@@ -71,7 +71,7 @@ cleanup() {
     kill "$BACKEND_PID" 2>/dev/null || true
   fi
   step "Stopping database container..."
-  "${COMPOSE_OPTS[@]}" stop db >/dev/null 2>&1 || true
+  docker compose "${COMPOSE_OPTS[@]}" stop db >/dev/null 2>&1 || true
   info "All stopped. Database data is preserved in the docker volume (emplyra_pgdata)."
 }
 interrupt() { exit 0; }
@@ -105,7 +105,7 @@ EOF
   info "Using host port $DB_HOST_PORT for the Emplyra database (backend DB_PORT=$DB_HOST_PORT)."
 fi
 
-"${COMPOSE_OPTS[@]}" up -d db \
+docker compose "${COMPOSE_OPTS[@]}" up -d db \
   || fail "Could not start the database container."
 
 info "Waiting for Postgres to accept connections..."

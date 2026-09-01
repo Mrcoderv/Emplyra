@@ -1,0 +1,214 @@
+2026/09/01 19:16:20 INFO super admin seeded email=admin@emplyra.local username=admin
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/emplyra/backend/internal/routes.NewRouter.func1 (7 handlers)
+[GIN-debug] POST   /api/v1/auth/login        --> github.com/emplyra/backend/internal/handlers.(*AuthHandler).Login-fm (7 handlers)
+[GIN-debug] POST   /api/v1/auth/refresh      --> github.com/emplyra/backend/internal/handlers.(*AuthHandler).Refresh-fm (7 handlers)
+[GIN-debug] GET    /api/v1/integrations/google/oauth/callback --> github.com/emplyra/backend/internal/handlers.(*GoogleFormHandler).OAuthCallback-fm (7 handlers)
+[GIN-debug] POST   /api/v1/auth/logout       --> github.com/emplyra/backend/internal/handlers.(*AuthHandler).Logout-fm (10 handlers)
+[GIN-debug] GET    /api/v1/auth/me           --> github.com/emplyra/backend/internal/handlers.(*AuthHandler).Me-fm (10 handlers)
+[GIN-debug] GET    /api/v1/users             --> github.com/emplyra/backend/internal/handlers.(*UserHandler).List-fm (11 handlers)
+[GIN-debug] POST   /api/v1/users             --> github.com/emplyra/backend/internal/handlers.(*UserHandler).Create-fm (12 handlers)
+[GIN-debug] GET    /api/v1/users/:id         --> github.com/emplyra/backend/internal/handlers.(*UserHandler).Get-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/users/:id         --> github.com/emplyra/backend/internal/handlers.(*UserHandler).Update-fm (12 handlers)
+[GIN-debug] DELETE /api/v1/users/:id         --> github.com/emplyra/backend/internal/handlers.(*UserHandler).Delete-fm (12 handlers)
+[GIN-debug] GET    /api/v1/roles             --> github.com/emplyra/backend/internal/handlers.(*RoleHandler).List-fm (11 handlers)
+[GIN-debug] GET    /api/v1/roles/permissions --> github.com/emplyra/backend/internal/handlers.(*RoleHandler).Permissions-fm (12 handlers)
+[GIN-debug] POST   /api/v1/roles             --> github.com/emplyra/backend/internal/handlers.(*RoleHandler).Create-fm (12 handlers)
+[GIN-debug] GET    /api/v1/roles/:id         --> github.com/emplyra/backend/internal/handlers.(*RoleHandler).Get-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/roles/:id         --> github.com/emplyra/backend/internal/handlers.(*RoleHandler).Update-fm (12 handlers)
+[GIN-debug] DELETE /api/v1/roles/:id         --> github.com/emplyra/backend/internal/handlers.(*RoleHandler).Delete-fm (12 handlers)
+[GIN-debug] GET    /api/v1/departments       --> github.com/emplyra/backend/internal/handlers.(*DepartmentHandler).List-fm (11 handlers)
+[GIN-debug] POST   /api/v1/departments       --> github.com/emplyra/backend/internal/handlers.(*DepartmentHandler).Create-fm (11 handlers)
+[GIN-debug] GET    /api/v1/departments/:id   --> github.com/emplyra/backend/internal/handlers.(*DepartmentHandler).Get-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/departments/:id   --> github.com/emplyra/backend/internal/handlers.(*DepartmentHandler).Update-fm (11 handlers)
+[GIN-debug] DELETE /api/v1/departments/:id   --> github.com/emplyra/backend/internal/handlers.(*DepartmentHandler).Delete-fm (11 handlers)
+[GIN-debug] GET    /api/v1/designations      --> github.com/emplyra/backend/internal/handlers.(*DesignationHandler).List-fm (11 handlers)
+[GIN-debug] POST   /api/v1/designations      --> github.com/emplyra/backend/internal/handlers.(*DesignationHandler).Create-fm (11 handlers)
+[GIN-debug] GET    /api/v1/designations/:id  --> github.com/emplyra/backend/internal/handlers.(*DesignationHandler).Get-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/designations/:id  --> github.com/emplyra/backend/internal/handlers.(*DesignationHandler).Update-fm (11 handlers)
+[GIN-debug] DELETE /api/v1/designations/:id  --> github.com/emplyra/backend/internal/handlers.(*DesignationHandler).Delete-fm (11 handlers)
+[GIN-debug] GET    /api/v1/employees         --> github.com/emplyra/backend/internal/handlers.(*EmployeeHandler).List-fm (11 handlers)
+[GIN-debug] POST   /api/v1/employees         --> github.com/emplyra/backend/internal/handlers.(*EmployeeHandler).Create-fm (11 handlers)
+[GIN-debug] GET    /api/v1/employees/me      --> github.com/emplyra/backend/internal/handlers.(*EmployeeHandler).MyProfile-fm (10 handlers)
+[GIN-debug] GET    /api/v1/employees/:id     --> github.com/emplyra/backend/internal/handlers.(*EmployeeHandler).Get-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/employees/:id     --> github.com/emplyra/backend/internal/handlers.(*EmployeeHandler).Update-fm (11 handlers)
+[GIN-debug] DELETE /api/v1/employees/:id     --> github.com/emplyra/backend/internal/handlers.(*EmployeeHandler).Delete-fm (11 handlers)
+[GIN-debug] POST   /api/v1/attendance/check-in --> github.com/emplyra/backend/internal/handlers.(*AttendanceHandler).CheckIn-fm (11 handlers)
+[GIN-debug] POST   /api/v1/attendance/check-out --> github.com/emplyra/backend/internal/handlers.(*AttendanceHandler).CheckOut-fm (11 handlers)
+[GIN-debug] GET    /api/v1/attendance        --> github.com/emplyra/backend/internal/handlers.(*AttendanceHandler).List-fm (11 handlers)
+[GIN-debug] GET    /api/v1/attendance/:id    --> github.com/emplyra/backend/internal/handlers.(*AttendanceHandler).Get-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/attendance/:id    --> github.com/emplyra/backend/internal/handlers.(*AttendanceHandler).Update-fm (11 handlers)
+[GIN-debug] GET    /api/v1/holidays          --> github.com/emplyra/backend/internal/handlers.(*HolidayHandler).List-fm (11 handlers)
+[GIN-debug] POST   /api/v1/holidays          --> github.com/emplyra/backend/internal/handlers.(*HolidayHandler).Create-fm (11 handlers)
+[GIN-debug] GET    /api/v1/holidays/:id      --> github.com/emplyra/backend/internal/handlers.(*HolidayHandler).Get-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/holidays/:id      --> github.com/emplyra/backend/internal/handlers.(*HolidayHandler).Update-fm (11 handlers)
+[GIN-debug] DELETE /api/v1/holidays/:id      --> github.com/emplyra/backend/internal/handlers.(*HolidayHandler).Delete-fm (11 handlers)
+[GIN-debug] GET    /api/v1/leaves/types      --> github.com/emplyra/backend/internal/handlers.(*LeaveHandler).Types-fm (11 handlers)
+[GIN-debug] GET    /api/v1/leaves/balances   --> github.com/emplyra/backend/internal/handlers.(*LeaveHandler).Balances-fm (11 handlers)
+[GIN-debug] POST   /api/v1/leaves/balances/set --> github.com/emplyra/backend/internal/handlers.(*LeaveHandler).SetBalance-fm (11 handlers)
+[GIN-debug] POST   /api/v1/leaves/balance    --> github.com/emplyra/backend/internal/handlers.(*LeaveHandler).SetBalance-fm (11 handlers)
+[GIN-debug] GET    /api/v1/leaves            --> github.com/emplyra/backend/internal/handlers.(*LeaveHandler).List-fm (11 handlers)
+[GIN-debug] POST   /api/v1/leaves            --> github.com/emplyra/backend/internal/handlers.(*LeaveHandler).Create-fm (11 handlers)
+[GIN-debug] GET    /api/v1/leaves/:id        --> github.com/emplyra/backend/internal/handlers.(*LeaveHandler).Get-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/leaves/:id/approve --> github.com/emplyra/backend/internal/handlers.(*LeaveHandler).Approve-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/leaves/:id/reject --> github.com/emplyra/backend/internal/handlers.(*LeaveHandler).Reject-fm (11 handlers)
+[GIN-debug] GET    /api/v1/salary            --> github.com/emplyra/backend/internal/handlers.(*PayrollHandler).ListStructures-fm (11 handlers)
+[GIN-debug] POST   /api/v1/salary            --> github.com/emplyra/backend/internal/handlers.(*PayrollHandler).CreateStructure-fm (11 handlers)
+[GIN-debug] GET    /api/v1/salary/:id        --> github.com/emplyra/backend/internal/handlers.(*PayrollHandler).GetStructure-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/salary/:id        --> github.com/emplyra/backend/internal/handlers.(*PayrollHandler).UpdateStructure-fm (11 handlers)
+[GIN-debug] DELETE /api/v1/salary/:id        --> github.com/emplyra/backend/internal/handlers.(*PayrollHandler).DeleteStructure-fm (11 handlers)
+[GIN-debug] GET    /api/v1/payroll           --> github.com/emplyra/backend/internal/handlers.(*PayrollHandler).List-fm (11 handlers)
+[GIN-debug] POST   /api/v1/payroll/generate  --> github.com/emplyra/backend/internal/handlers.(*PayrollHandler).Generate-fm (11 handlers)
+[GIN-debug] POST   /api/v1/payroll/process   --> github.com/emplyra/backend/internal/handlers.(*PayrollHandler).Process-fm (11 handlers)
+[GIN-debug] POST   /api/v1/payroll/mark-paid --> github.com/emplyra/backend/internal/handlers.(*PayrollHandler).MarkPaid-fm (11 handlers)
+[GIN-debug] POST   /api/v1/payroll/cancel    --> github.com/emplyra/backend/internal/handlers.(*PayrollHandler).Cancel-fm (11 handlers)
+[GIN-debug] GET    /api/v1/payroll/:id       --> github.com/emplyra/backend/internal/handlers.(*PayrollHandler).Get-fm (11 handlers)
+[GIN-debug] GET    /api/v1/payroll/:id/payslip --> github.com/emplyra/backend/internal/handlers.(*PayrollHandler).Payslip-fm (11 handlers)
+[GIN-debug] GET    /api/v1/recruitment/jobs  --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).ListJobs-fm (11 handlers)
+[GIN-debug] POST   /api/v1/recruitment/jobs  --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).CreateJob-fm (11 handlers)
+[GIN-debug] GET    /api/v1/recruitment/jobs/:id --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).GetJob-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/recruitment/jobs/:id --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).UpdateJob-fm (11 handlers)
+[GIN-debug] DELETE /api/v1/recruitment/jobs/:id --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).DeleteJob-fm (11 handlers)
+[GIN-debug] POST   /api/v1/recruitment/jobs/:id/google-form/connect --> github.com/emplyra/backend/internal/handlers.(*GoogleFormHandler).Connect-fm (11 handlers)
+[GIN-debug] GET    /api/v1/recruitment/jobs/:id/google-form --> github.com/emplyra/backend/internal/handlers.(*GoogleFormHandler).Get-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/recruitment/jobs/:id/google-form --> github.com/emplyra/backend/internal/handlers.(*GoogleFormHandler).Update-fm (11 handlers)
+[GIN-debug] DELETE /api/v1/recruitment/jobs/:id/google-form --> github.com/emplyra/backend/internal/handlers.(*GoogleFormHandler).Disconnect-fm (11 handlers)
+[GIN-debug] POST   /api/v1/recruitment/jobs/:id/google-form/sync --> github.com/emplyra/backend/internal/handlers.(*GoogleFormHandler).Sync-fm (11 handlers)
+[GIN-debug] GET    /api/v1/recruitment/jobs/:id/google-form/sync-status --> github.com/emplyra/backend/internal/handlers.(*GoogleFormHandler).SyncStatus-fm (11 handlers)
+[GIN-debug] GET    /api/v1/recruitment/jobs/:id/google-form/responses --> github.com/emplyra/backend/internal/handlers.(*GoogleFormHandler).Responses-fm (11 handlers)
+[GIN-debug] POST   /api/v1/integrations/google/oauth/authorize --> github.com/emplyra/backend/internal/handlers.(*GoogleFormHandler).OAuthAuthorize-fm (11 handlers)
+[GIN-debug] GET    /api/v1/recruitment/candidates --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).ListCandidates-fm (11 handlers)
+[GIN-debug] POST   /api/v1/recruitment/candidates --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).CreateCandidate-fm (11 handlers)
+[GIN-debug] GET    /api/v1/recruitment/candidates/:id --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).GetCandidate-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/recruitment/candidates/:id --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).UpdateCandidate-fm (11 handlers)
+[GIN-debug] DELETE /api/v1/recruitment/candidates/:id --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).DeleteCandidate-fm (11 handlers)
+[GIN-debug] GET    /api/v1/recruitment/applications --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).ListApplications-fm (11 handlers)
+[GIN-debug] POST   /api/v1/recruitment/applications --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).CreateApplication-fm (11 handlers)
+[GIN-debug] GET    /api/v1/recruitment/applications/:id --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).GetApplication-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/recruitment/applications/:id/status --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).UpdateApplicationStatus-fm (11 handlers)
+[GIN-debug] GET    /api/v1/recruitment/interviews --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).ListInterviews-fm (11 handlers)
+[GIN-debug] POST   /api/v1/recruitment/interviews --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).ScheduleInterview-fm (11 handlers)
+[GIN-debug] GET    /api/v1/recruitment/interviews/:id --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).GetInterview-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/recruitment/interviews/:id --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).CompleteInterview-fm (11 handlers)
+[GIN-debug] GET    /api/v1/recruitment/onboarding --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).ListOnboardings-fm (11 handlers)
+[GIN-debug] POST   /api/v1/recruitment/onboarding --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).CreateOnboarding-fm (11 handlers)
+[GIN-debug] GET    /api/v1/recruitment/onboarding/:id --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).GetOnboarding-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/recruitment/onboarding/:id --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).UpdateOnboarding-fm (11 handlers)
+[GIN-debug] POST   /api/v1/recruitment/onboarding/hire --> github.com/emplyra/backend/internal/handlers.(*RecruitmentHandler).Hire-fm (11 handlers)
+[GIN-debug] GET    /api/v1/performance/goals --> github.com/emplyra/backend/internal/handlers.(*PerformanceHandler).ListGoals-fm (11 handlers)
+[GIN-debug] POST   /api/v1/performance/goals --> github.com/emplyra/backend/internal/handlers.(*PerformanceHandler).CreateGoal-fm (11 handlers)
+[GIN-debug] GET    /api/v1/performance/goals/:id --> github.com/emplyra/backend/internal/handlers.(*PerformanceHandler).GetGoal-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/performance/goals/:id --> github.com/emplyra/backend/internal/handlers.(*PerformanceHandler).UpdateGoal-fm (11 handlers)
+[GIN-debug] DELETE /api/v1/performance/goals/:id --> github.com/emplyra/backend/internal/handlers.(*PerformanceHandler).DeleteGoal-fm (11 handlers)
+[GIN-debug] GET    /api/v1/performance/kpis  --> github.com/emplyra/backend/internal/handlers.(*PerformanceHandler).ListKPIs-fm (11 handlers)
+[GIN-debug] POST   /api/v1/performance/kpis  --> github.com/emplyra/backend/internal/handlers.(*PerformanceHandler).CreateKPI-fm (11 handlers)
+[GIN-debug] GET    /api/v1/performance/kpis/:id --> github.com/emplyra/backend/internal/handlers.(*PerformanceHandler).GetKPI-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/performance/kpis/:id --> github.com/emplyra/backend/internal/handlers.(*PerformanceHandler).UpdateKPI-fm (11 handlers)
+[GIN-debug] DELETE /api/v1/performance/kpis/:id --> github.com/emplyra/backend/internal/handlers.(*PerformanceHandler).DeleteKPI-fm (11 handlers)
+[GIN-debug] GET    /api/v1/performance/reviews --> github.com/emplyra/backend/internal/handlers.(*PerformanceHandler).ListReviews-fm (11 handlers)
+[GIN-debug] POST   /api/v1/performance/reviews --> github.com/emplyra/backend/internal/handlers.(*PerformanceHandler).CreateReview-fm (11 handlers)
+[GIN-debug] GET    /api/v1/performance/reviews/:id --> github.com/emplyra/backend/internal/handlers.(*PerformanceHandler).GetReview-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/performance/reviews/:id/submit --> github.com/emplyra/backend/internal/handlers.(*PerformanceHandler).SubmitReview-fm (11 handlers)
+[GIN-debug] GET    /api/v1/training/programs --> github.com/emplyra/backend/internal/handlers.(*TrainingHandler).ListPrograms-fm (11 handlers)
+[GIN-debug] POST   /api/v1/training/programs --> github.com/emplyra/backend/internal/handlers.(*TrainingHandler).CreateProgram-fm (11 handlers)
+[GIN-debug] GET    /api/v1/training/programs/:id --> github.com/emplyra/backend/internal/handlers.(*TrainingHandler).GetProgram-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/training/programs/:id --> github.com/emplyra/backend/internal/handlers.(*TrainingHandler).UpdateProgram-fm (11 handlers)
+[GIN-debug] DELETE /api/v1/training/programs/:id --> github.com/emplyra/backend/internal/handlers.(*TrainingHandler).DeleteProgram-fm (11 handlers)
+[GIN-debug] GET    /api/v1/training/schedules --> github.com/emplyra/backend/internal/handlers.(*TrainingHandler).ListSchedules-fm (11 handlers)
+[GIN-debug] POST   /api/v1/training/schedules --> github.com/emplyra/backend/internal/handlers.(*TrainingHandler).CreateSchedule-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/training/schedules/:id --> github.com/emplyra/backend/internal/handlers.(*TrainingHandler).UpdateSchedule-fm (11 handlers)
+[GIN-debug] DELETE /api/v1/training/schedules/:id --> github.com/emplyra/backend/internal/handlers.(*TrainingHandler).DeleteSchedule-fm (11 handlers)
+[GIN-debug] GET    /api/v1/training/enrollments --> github.com/emplyra/backend/internal/handlers.(*TrainingHandler).ListEnrollments-fm (11 handlers)
+[GIN-debug] POST   /api/v1/training/enrollments --> github.com/emplyra/backend/internal/handlers.(*TrainingHandler).Enroll-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/training/enrollments/:id --> github.com/emplyra/backend/internal/handlers.(*TrainingHandler).UpdateEnrollment-fm (11 handlers)
+[GIN-debug] GET    /api/v1/documents         --> github.com/emplyra/backend/internal/handlers.(*DocumentHandler).List-fm (11 handlers)
+[GIN-debug] POST   /api/v1/documents         --> github.com/emplyra/backend/internal/handlers.(*DocumentHandler).Upload-fm (11 handlers)
+[GIN-debug] GET    /api/v1/documents/:id     --> github.com/emplyra/backend/internal/handlers.(*DocumentHandler).Get-fm (11 handlers)
+[GIN-debug] GET    /api/v1/documents/:id/download --> github.com/emplyra/backend/internal/handlers.(*DocumentHandler).Download-fm (11 handlers)
+[GIN-debug] DELETE /api/v1/documents/:id     --> github.com/emplyra/backend/internal/handlers.(*DocumentHandler).Delete-fm (11 handlers)
+[GIN-debug] GET    /api/v1/notifications     --> github.com/emplyra/backend/internal/handlers.(*NotificationHandler).List-fm (11 handlers)
+[GIN-debug] GET    /api/v1/notifications/unread-count --> github.com/emplyra/backend/internal/handlers.(*NotificationHandler).UnreadCount-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/notifications/read-all --> github.com/emplyra/backend/internal/handlers.(*NotificationHandler).MarkAllRead-fm (11 handlers)
+[GIN-debug] PUT    /api/v1/notifications/:id/read --> github.com/emplyra/backend/internal/handlers.(*NotificationHandler).MarkRead-fm (11 handlers)
+[GIN-debug] GET    /api/v1/reports/headcount --> github.com/emplyra/backend/internal/handlers.(*ReportHandler).Headcount-fm (11 handlers)
+[GIN-debug] GET    /api/v1/reports/attendance --> github.com/emplyra/backend/internal/handlers.(*ReportHandler).Attendance-fm (11 handlers)
+[GIN-debug] GET    /api/v1/reports/leaves    --> github.com/emplyra/backend/internal/handlers.(*ReportHandler).Leaves-fm (11 handlers)
+[GIN-debug] GET    /api/v1/reports/payroll   --> github.com/emplyra/backend/internal/handlers.(*ReportHandler).Payroll-fm (11 handlers)
+[GIN-debug] GET    /api/v1/reports/recruitment --> github.com/emplyra/backend/internal/handlers.(*ReportHandler).Recruitment-fm (11 handlers)
+[GIN-debug] GET    /api/v1/reports/holidays  --> github.com/emplyra/backend/internal/handlers.(*ReportHandler).Holidays-fm (11 handlers)
+[GIN-debug] GET    /api/v1/dashboard/summary --> github.com/emplyra/backend/internal/handlers.(*ReportHandler).Dashboard-fm (11 handlers)
+[GIN-debug] GET    /api/v1/audit/logs        --> github.com/emplyra/backend/internal/handlers.(*AuditHandler).List-fm (11 handlers)
+[GIN-debug] GET    /api/v1/admin/dashboard   --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).Dashboard-fm (9 handlers)
+[GIN-debug] GET    /api/v1/admin/tenants     --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).List-fm (9 handlers)
+[GIN-debug] POST   /api/v1/admin/tenants     --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).Create-fm (9 handlers)
+[GIN-debug] GET    /api/v1/admin/tenants/:id --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).Get-fm (9 handlers)
+[GIN-debug] PUT    /api/v1/admin/tenants/:id --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).Update-fm (9 handlers)
+[GIN-debug] POST   /api/v1/admin/tenants/:id/activate --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).Activate-fm (9 handlers)
+[GIN-debug] POST   /api/v1/admin/tenants/:id/suspend --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).Suspend-fm (9 handlers)
+[GIN-debug] POST   /api/v1/admin/tenants/:id/owners --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).CreateOwner-fm (9 handlers)
+[GIN-debug] GET    /api/v1/admin/users       --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).PlatformUsers-fm (9 handlers)
+[GIN-debug] POST   /api/v1/admin/users       --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).CreatePlatformUser-fm (9 handlers)
+[GIN-debug] PUT    /api/v1/admin/users/:id   --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).UpdatePlatformUser-fm (9 handlers)
+[GIN-debug] DELETE /api/v1/admin/users/:id   --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).DeletePlatformUser-fm (9 handlers)
+[GIN-debug] POST   /api/v1/public/tenants    --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).Register-fm (7 handlers)
+2026/09/01 19:16:20 INFO server starting port=8080 env=development
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+2026/09/01 19:17:09 INFO request method=GET path=/healthz status=200 duration_ms=0 ip=::1
+2026/09/01 19:17:09 INFO request method=POST path=/api/v1/auth/login status=200 duration_ms=460 ip=::1
+2026/09/01 19:17:14 INFO request method=GET path=/ status=404 duration_ms=0 ip=127.0.0.1
+2026/09/01 19:17:14 INFO request method=GET path=/favicon.ico status=404 duration_ms=0 ip=127.0.0.1
+2026/09/01 19:17:16 INFO request method=GET path=/ status=404 duration_ms=0 ip=127.0.0.1
+2026/09/01 19:17:17 INFO request method=GET path=/ status=404 duration_ms=0 ip=127.0.0.1
+2026/09/01 19:17:18 INFO request method=GET path=/ status=404 duration_ms=0 ip=127.0.0.1
+2026/09/01 19:17:37 INFO request method=GET path=/ status=404 duration_ms=0 ip=127.0.0.1
+2026/09/01 19:18:14 INFO request method=OPTIONS path=/api/v1/auth/login status=204 duration_ms=1 ip=::1
+2026/09/01 19:18:14 INFO request method=POST path=/api/v1/auth/login status=401 duration_ms=452 ip=::1
+2026/09/01 19:18:17 INFO request method=OPTIONS path=/api/v1/auth/login status=204 duration_ms=0 ip=::1
+2026/09/01 19:18:17 INFO request method=POST path=/api/v1/auth/login status=401 duration_ms=443 ip=::1
+2026/09/01 19:18:24 INFO request method=OPTIONS path=/api/v1/auth/login status=204 duration_ms=0 ip=::1
+2026/09/01 19:18:25 INFO request method=POST path=/api/v1/auth/login status=200 duration_ms=443 ip=::1
+2026/09/01 19:18:25 INFO request method=OPTIONS path=/api/v1/auth/me status=204 duration_ms=0 ip=::1
+2026/09/01 19:18:25 INFO request method=GET path=/api/v1/auth/me status=200 duration_ms=17 ip=::1
+2026/09/01 19:18:28 INFO request method=OPTIONS path=/api/v1/auth/me status=204 duration_ms=0 ip=::1
+2026/09/01 19:18:28 INFO request method=GET path=/api/v1/auth/me status=200 duration_ms=9 ip=::1
+2026/09/01 19:18:28 INFO request method=OPTIONS path=/api/v1/dashboard/summary status=204 duration_ms=0 ip=::1
+2026/09/01 19:18:28 INFO request method=OPTIONS path=/api/v1/dashboard/summary status=204 duration_ms=0 ip=::1
+2026/09/01 19:18:28 INFO request method=GET path=/api/v1/dashboard/summary status=200 duration_ms=45 ip=::1
+2026/09/01 19:18:28 INFO request method=GET path=/api/v1/dashboard/summary status=200 duration_ms=43 ip=::1
+2026/09/01 19:18:33 INFO request method=OPTIONS path=/api/v1/employees status=204 duration_ms=0 ip=::1
+2026/09/01 19:18:33 INFO request method=OPTIONS path=/api/v1/employees status=204 duration_ms=0 ip=::1
+2026/09/01 19:18:33 INFO request method=GET path=/api/v1/employees status=500 duration_ms=7 ip=::1
+2026/09/01 19:18:33 INFO request method=GET path=/api/v1/employees status=500 duration_ms=5 ip=::1
+2026/09/01 19:18:40 INFO request method=OPTIONS path=/api/v1/employees status=204 duration_ms=0 ip=::1
+2026/09/01 19:18:40 INFO request method=OPTIONS path=/api/v1/employees status=204 duration_ms=0 ip=::1
+2026/09/01 19:18:40 INFO request method=GET path=/api/v1/employees status=500 duration_ms=10 ip=::1
+2026/09/01 19:18:40 INFO request method=GET path=/api/v1/employees status=500 duration_ms=10 ip=::1
+2026/09/01 19:19:02 INFO request method=OPTIONS path=/api/v1/dashboard/summary status=204 duration_ms=0 ip=::1
+2026/09/01 19:19:02 INFO request method=OPTIONS path=/api/v1/dashboard/summary status=204 duration_ms=0 ip=::1
+2026/09/01 19:19:02 INFO request method=GET path=/api/v1/dashboard/summary status=200 duration_ms=30 ip=::1
+2026/09/01 19:19:02 INFO request method=GET path=/api/v1/dashboard/summary status=200 duration_ms=37 ip=::1
+2026/09/01 19:19:03 INFO request method=OPTIONS path=/api/v1/auth/me status=204 duration_ms=0 ip=::1
+2026/09/01 19:19:03 INFO request method=GET path=/api/v1/auth/me status=200 duration_ms=10 ip=::1
+2026/09/01 19:19:03 INFO request method=OPTIONS path=/api/v1/dashboard/summary status=204 duration_ms=0 ip=::1
+2026/09/01 19:19:03 INFO request method=OPTIONS path=/api/v1/dashboard/summary status=204 duration_ms=0 ip=::1
+2026/09/01 19:19:04 INFO request method=GET path=/api/v1/dashboard/summary status=200 duration_ms=280 ip=::1
+2026/09/01 19:19:04 INFO request method=GET path=/api/v1/dashboard/summary status=200 duration_ms=291 ip=::1
+2026/09/01 19:19:05 INFO request method=OPTIONS path=/api/v1/auth/me status=204 duration_ms=0 ip=::1
+2026/09/01 19:19:05 INFO request method=GET path=/api/v1/auth/me status=200 duration_ms=7 ip=::1
+2026/09/01 19:19:08 INFO request method=OPTIONS path=/api/v1/auth/me status=204 duration_ms=0 ip=::1
+2026/09/01 19:19:08 INFO request method=GET path=/api/v1/auth/me status=200 duration_ms=6 ip=::1
+2026/09/01 19:19:08 INFO request method=OPTIONS path=/api/v1/dashboard/summary status=204 duration_ms=0 ip=::1
+2026/09/01 19:19:08 INFO request method=OPTIONS path=/api/v1/dashboard/summary status=204 duration_ms=0 ip=::1
+2026/09/01 19:19:08 INFO request method=GET path=/api/v1/dashboard/summary status=200 duration_ms=13 ip=::1
+2026/09/01 19:19:08 INFO request method=GET path=/api/v1/dashboard/summary status=200 duration_ms=14 ip=::1
+2026/09/01 19:19:10 INFO request method=OPTIONS path=/api/v1/employees status=204 duration_ms=0 ip=::1
+2026/09/01 19:19:10 INFO request method=OPTIONS path=/api/v1/employees status=204 duration_ms=0 ip=::1
+2026/09/01 19:19:10 INFO request method=GET path=/api/v1/employees status=500 duration_ms=3 ip=::1
+2026/09/01 19:19:10 INFO request method=GET path=/api/v1/employees status=500 duration_ms=4 ip=::1
+2026/09/01 19:19:20 INFO request method=POST path=/api/v1/auth/login status=200 duration_ms=250 ip=::1
+2026/09/01 19:19:20 INFO request method=GET path=/api/v1/employees status=500 duration_ms=3 ip=::1

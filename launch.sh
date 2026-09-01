@@ -70,14 +70,14 @@ cleanup() {
   warn "Shutting down Emplyra..."
   kill "${FRONTEND_PID:-}" "${BACKEND_PID:-}" 2>/dev/null || true
   pkill -P "${FRONTEND_PID:-}" 2>/dev/null || true
-  "${COMPOSE_OPTS[@]}" stop db >/dev/null 2>&1 || true
+  docker compose "${COMPOSE_OPTS[@]}" stop db >/dev/null 2>&1 || true
   info "All stopped. Database data is preserved."
 }
 trap cleanup EXIT INT TERM
 
 step "Starting Postgres database..."
 docker info >/dev/null 2>&1 || fail "Docker is not running. Start Docker Desktop/Engine and retry."
-"${COMPOSE_OPTS[@]}" up -d db || fail "Could not start the Emplyra database."
+docker compose "${COMPOSE_OPTS[@]}" up -d db || fail "Could not start the Emplyra database."
 for _ in $(seq 1 60); do
   if docker exec emplyra-db pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; then break; fi
   sleep 1
