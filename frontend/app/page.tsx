@@ -1,5 +1,2 @@
-import EmplyraDashboard from '@/components/emplyra-dashboard'
-
-export default function Page() {
-  return <EmplyraDashboard />
-}
+import { redirect } from 'next/navigation'
+export default function Page() { redirect('/login') }
