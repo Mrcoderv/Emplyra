@@ -1,0 +1,14 @@
+export type ApiEnvelope<T> = { success: boolean; message?: string; data: T; errors?: Record<string, string> | string[] }
+export type Session = { access_token: string; refresh_token: string; expires_in: number; token_type: string }
+export type Scope = 'platform' | 'tenant'
+export type CurrentUser = { id: string; email: string; username?: string; first_name: string; last_name: string; role?: string | { name: string }; permissions?: string[] }
+export type MeTenant = { id: string; name: string; status: string; plan: string }
+export type MeResponse = { user: CurrentUser; permissions: string[]; roles: string[]; scope: Scope; tenant?: MeTenant }
+export type DashboardSummary = Record<string, unknown> & { total_employees?: number; active_employees?: number; employees_on_leave?: number; present_today?: number; pending_leave_requests?: number; open_positions?: number }
+export type Employee = { id: string; employee_code?: string; first_name: string; last_name: string; email?: string; department?: { name: string } | string; designation?: { name: string } | string; status?: string; employment_status?: string; avatar_url?: string }
+export type ListResponse<T> = { items: T[]; total: number; page: number; page_size: number; total_pages: number }
+export type ModuleRecord = Record<string, unknown> & { id?: string; name?: string; title?: string; status?: string; created_at?: string }
+export type RequestOptions = { page?: number; pageSize?: number; search?: string; query?: Record<string, string | number | boolean | undefined> }
+export type CreateEmployee = Record<string, unknown>
+export type UpdateEmployee = Record<string, unknown>
+export const OPERATIONAL_TENANT_STATUSES = ['ACTIVE', 'TRIAL']

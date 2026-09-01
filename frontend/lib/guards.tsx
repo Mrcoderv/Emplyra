@@ -1,56 +1,6 @@
 'use client'
-
 import { useAuth } from '@/lib/auth'
 import type { Scope } from '@/lib/api'
-
-/**
- * Route-level scope guard. Renders children only when the authenticated session
- * has one of the required scopes; otherwise it renders the `fallback` (default: a
- * visible "wrong role" notice — never a silent switch of context).
- */
-export function RequireScope({
-  scopes,
-  children,
-  fallback,
-}: {
-  scopes: Scope[]
-  children: React.ReactNode
-  fallback?: React.ReactNode
-}) {
-  const { status, scope } = useAuth()
-  if (status === 'loading') {
-    return (
-      <div className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">
-        Loading…
-      </div>
-    )
-  }
-  if (!scope || !scopes.includes(scope)) {
-    return fallback ?? (
-      <div className="grid min-h-screen place-items-center bg-background px-4">
-        <div className="max-w-md rounded-2xl border border-border bg-card p-8 text-center">
-          <h2 className="text-xl font-semibold">Access restricted</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Sign in with an account that is allowed in this area.
-          </p>
-          <a
-            href="/"
-            className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
-          >
-            Back to sign in
-          </a>
-        </div>
-      </div>
-    )
-  }
-  return <>{children}</>
-}
-
-export function requireScope(...scopes: Scope[]) {
-  return function ScopeGuard({ children }: { children: React.ReactNode }) {
-    return <RequireScope scopes={scopes}>{children}</RequireScope>
-  }
-}
-
-export const TenantScope = requireScope('tenant')
-export const PlatformScope = requireScope('platform')
+export function AuthGuard({ children }: { children: React.ReactNode }) { const { status } = useAuth(); if (status === 'loading') return <div className="grid min-h-screen place-items-center bg-background"><p className="text-sm text-muted-foreground">Loading your workspace…</p></div>; if (status === 'unauthenticated') { if (typeof window !== 'undefined') window.location.replace('/login'); return null } return <>{children}</> }
+export function PermissionGate({ permission, children, fallback = null }: { permission?: string; children: React.ReactNode; fallback?: React.ReactNode }) { const { can } = useAuth(); return !permission || can(permission) ? <>{children}</> : <>{fallback}</> }
+export function RequireScope({ scopes, children, fallback }: { scopes: Scope[]; children: React.ReactNode; fallback?: React.ReactNode }) { const { status, scope } = useAuth(); if (status === 'loading') return <div className="grid min-h-screen place-items-center bg-background">Loading…</div>; return scope && scopes.includes(scope) ? <>{children}</> : <>{fallback ?? <div className="grid min-h-screen place-items-center p-8 text-center"><div><h2 className="text-xl font-semibold">Access restricted</h2><p className="mt-2 text-sm text-muted-foreground">Your account is not allowed in this area.</p></div></div>}</> }
