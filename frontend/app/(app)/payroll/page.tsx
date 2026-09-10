@@ -1,3 +1,5 @@
-import ModulePlaceholder from '@/components/module-placeholder'
-import { navigation } from '@/lib/navigation'
-export default function Page(){return <ModulePlaceholder item={navigation.find(i=>i.href==='/payroll')!}/>} 
+import OperationalModulePage from '@/components/operational-module-page'
+
+export default function PayrollPage() {
+  return <OperationalModulePage module="payroll" />
+}

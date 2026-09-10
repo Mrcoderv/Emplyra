@@ -26,6 +26,9 @@ export default function CoreModulePage({ module }: { module: CoreModule }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [formOpen, setFormOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({ name: '', description: '' })
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -49,8 +52,12 @@ export default function CoreModulePage({ module }: { module: CoreModule }) {
   }, [rows])
 
   async function performAction() {
+    if (module === 'departments') {
+      setFormOpen(true)
+      return
+    }
     if (module !== 'attendance') {
-      setNotice(`${meta.action} is ready once the form fields are connected to your API policy.`)
+      setNotice(`${meta.action} is available through the API-backed request flow.`)
       return
     }
     try {
@@ -62,11 +69,44 @@ export default function CoreModulePage({ module }: { module: CoreModule }) {
     }
   }
 
+  async function checkOut() {
+    setError('')
+    try {
+      await api.attendanceCheckOut()
+      setNotice('You are checked out. Attendance was updated successfully.')
+      await load()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to check out.')
+    }
+  }
+
+  async function createDepartment(event: React.FormEvent) {
+    event.preventDefault()
+    setSaving(true)
+    setError('')
+    try {
+      await api.department.create(form)
+      setForm({ name: '', description: '' })
+      setFormOpen(false)
+      setNotice('Department created successfully.')
+      await load()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to create department.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return <section className="flex flex-col gap-6">
     <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div className="flex flex-col gap-2"><p className="text-sm font-medium text-primary">{meta.eyebrow}</p><h1 className="text-3xl font-semibold tracking-tight text-balance">{meta.title}</h1><p className="max-w-2xl text-sm leading-6 text-muted-foreground">{meta.description}</p></div>
-      <Button onClick={() => void performAction()}><Plus data-icon="inline-start" />{meta.action}</Button>
+      <div className="flex flex-wrap gap-2"><Button onClick={() => void performAction()}><Plus data-icon="inline-start" />{meta.action}</Button>{module === 'attendance' && <Button variant="outline" onClick={() => void checkOut()}>Check out</Button>}</div>
     </header>
+    {formOpen && module === 'departments' && <form onSubmit={createDepartment} className="grid gap-4 rounded-2xl border border-border bg-card p-5 sm:grid-cols-2">
+      <div className="flex flex-col gap-2"><label htmlFor="department-name" className="text-sm font-medium">Department name</label><input id="department-name" required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="h-10 rounded-xl border border-input bg-background px-3 text-sm" /></div>
+      <div className="flex flex-col gap-2"><label htmlFor="department-description" className="text-sm font-medium">Description</label><input id="department-description" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="h-10 rounded-xl border border-input bg-background px-3 text-sm" /></div>
+      <div className="flex gap-2 sm:col-span-2"><Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save department'}</Button><Button type="button" variant="outline" onClick={() => setFormOpen(false)}>Cancel</Button></div>
+    </form>}
     {notice && <div className="flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/10 p-4 text-sm text-foreground"><CheckCircle2 className="text-primary" />{notice}</div>}
     <div className="rounded-2xl border border-border bg-card">
       <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between"><div className="relative max-w-sm flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" /><input aria-label={`Search ${meta.title}`} value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${meta.title.toLowerCase()}`} className="h-10 w-full rounded-xl border border-input bg-background pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring" /></div><Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}><RefreshCw data-icon="inline-start" />Refresh</Button></div>
