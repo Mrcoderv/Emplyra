@@ -21,6 +21,7 @@ const configs: Record<string, ModuleConfig> = {
   performance: { title: 'Performance', eyebrow: 'People programs', description: 'Keep goals and reviews visible so managers and employees can act on them.', path: '/performance/goals', empty: 'No performance goals are available yet.' },
   training: { title: 'Training', eyebrow: 'People development', description: 'Manage learning programs and keep enrollment progress in one place.', path: '/training/programs', empty: 'No training programs have been created yet.' },
   reports: { title: 'Reports', eyebrow: 'Insights', description: 'Use live HRMS data to understand headcount, attendance, leave, payroll, and hiring.', path: '/reports/headcount', empty: 'No report data is available yet.', report: true },
+  documents: { title: 'Documents', eyebrow: 'Employee records', description: 'Keep contracts, policies, and employee files organized in one secure workspace.', path: '/documents', empty: 'No documents have been uploaded yet.' },
 }
 
 function value(value: unknown) {

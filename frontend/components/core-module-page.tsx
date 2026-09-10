@@ -69,6 +69,17 @@ export default function CoreModulePage({ module }: { module: CoreModule }) {
     }
   }
 
+  async function checkOut() {
+    setError('')
+    try {
+      await api.attendanceCheckOut()
+      setNotice('You are checked out. Attendance was updated successfully.')
+      await load()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to check out.')
+    }
+  }
+
   async function createDepartment(event: React.FormEvent) {
     event.preventDefault()
     setSaving(true)
@@ -89,7 +100,7 @@ export default function CoreModulePage({ module }: { module: CoreModule }) {
   return <section className="flex flex-col gap-6">
     <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div className="flex flex-col gap-2"><p className="text-sm font-medium text-primary">{meta.eyebrow}</p><h1 className="text-3xl font-semibold tracking-tight text-balance">{meta.title}</h1><p className="max-w-2xl text-sm leading-6 text-muted-foreground">{meta.description}</p></div>
-      <Button onClick={() => void performAction()}><Plus data-icon="inline-start" />{meta.action}</Button>
+      <div className="flex flex-wrap gap-2"><Button onClick={() => void performAction()}><Plus data-icon="inline-start" />{meta.action}</Button>{module === 'attendance' && <Button variant="outline" onClick={() => void checkOut()}>Check out</Button>}</div>
     </header>
     {formOpen && module === 'departments' && <form onSubmit={createDepartment} className="grid gap-4 rounded-2xl border border-border bg-card p-5 sm:grid-cols-2">
       <div className="flex flex-col gap-2"><label htmlFor="department-name" className="text-sm font-medium">Department name</label><input id="department-name" required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="h-10 rounded-xl border border-input bg-background px-3 text-sm" /></div>
