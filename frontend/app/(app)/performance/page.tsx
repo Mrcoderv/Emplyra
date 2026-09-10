@@ -1,3 +1,5 @@
-import ModulePlaceholder from '@/components/module-placeholder'
-import { navigation } from '@/lib/navigation'
-export default function Page(){return <ModulePlaceholder item={navigation.find(i=>i.href==='/performance')!}/>} 
+import OperationalModulePage from '@/components/operational-module-page'
+
+export default function PerformancePage() {
+  return <OperationalModulePage module="performance" />
+}
