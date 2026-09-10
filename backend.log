@@ -153,7 +153,8 @@
 [GIN-debug] PUT    /api/v1/admin/users/:id   --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).UpdatePlatformUser-fm (9 handlers)
 [GIN-debug] DELETE /api/v1/admin/users/:id   --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).DeletePlatformUser-fm (9 handlers)
 [GIN-debug] POST   /api/v1/public/tenants    --> github.com/emplyra/backend/internal/handlers.(*TenantHandler).Register-fm (7 handlers)
-2026/09/01 19:57:52 INFO server starting port=8080 env=development
+2026/09/01 21:30:28 INFO server starting port=8080 env=development
 [GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
 Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
 [GIN-debug] Listening and serving HTTP on :8080
+2026/09/01 21:30:29 INFO request method=GET path=/healthz status=200 duration_ms=0 ip=::1

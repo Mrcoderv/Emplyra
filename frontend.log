@@ -4,4 +4,8 @@ $ next dev
    - Network:      http://192.168.18.171:3000
 
  ✓ Starting...
- ✓ Ready in 1824ms
+ ✓ Ready in 1964ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1427ms (568 modules)
+ GET / 307 in 1904ms
+[?25h
