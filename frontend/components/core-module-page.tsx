@@ -28,7 +28,7 @@ export default function CoreModulePage({ module }: { module: CoreModule }) {
   const [notice, setNotice] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ name: '', description: '' })
+  const [form, setForm] = useState({ name: '', code: '', description: '' })
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -86,7 +86,7 @@ export default function CoreModulePage({ module }: { module: CoreModule }) {
     setError('')
     try {
       await api.department.create(form)
-      setForm({ name: '', description: '' })
+      setForm({ name: '', code: '', description: '' })
       setFormOpen(false)
       setNotice('Department created successfully.')
       await load()
@@ -104,6 +104,7 @@ export default function CoreModulePage({ module }: { module: CoreModule }) {
     </header>
     {formOpen && module === 'departments' && <form onSubmit={createDepartment} className="grid gap-4 rounded-2xl border border-border bg-card p-5 sm:grid-cols-2">
       <div className="flex flex-col gap-2"><label htmlFor="department-name" className="text-sm font-medium">Department name</label><input id="department-name" required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="h-10 rounded-xl border border-input bg-background px-3 text-sm" /></div>
+      <div className="flex flex-col gap-2"><label htmlFor="department-code" className="text-sm font-medium">Code</label><input id="department-code" required minLength={2} maxLength={50} value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} className="h-10 rounded-xl border border-input bg-background px-3 text-sm" /></div>
       <div className="flex flex-col gap-2"><label htmlFor="department-description" className="text-sm font-medium">Description</label><input id="department-description" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="h-10 rounded-xl border border-input bg-background px-3 text-sm" /></div>
       <div className="flex gap-2 sm:col-span-2"><Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save department'}</Button><Button type="button" variant="outline" onClick={() => setFormOpen(false)}>Cancel</Button></div>
     </form>}

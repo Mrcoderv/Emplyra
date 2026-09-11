@@ -1,11 +1,53 @@
-$ next dev
    ▲ Next.js 15.5.24
    - Local:        http://localhost:3000
    - Network:      http://192.168.18.171:3000
 
  ✓ Starting...
- ✓ Ready in 1964ms
+ ✓ Ready in 2.3s
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 2.4s (695 modules)
+ GET /dashboard 200 in 2890ms
+ GET /dashboard 200 in 95ms
+ ○ Compiling /employees ...
+ ✓ Compiled /employees in 1182ms (780 modules)
+ GET /employees 200 in 1547ms
+ ✓ Compiled /departments in 360ms (773 modules)
+ GET /departments 200 in 618ms
+ ○ Compiling /attendance ...
+ ✓ Compiled /attendance in 550ms (788 modules)
+ GET /attendance 200 in 717ms
+ ✓ Compiled /leaves in 463ms (799 modules)
+ GET /leaves 200 in 619ms
+ ✓ Compiled /documents in 445ms (812 modules)
+ GET /documents 200 in 681ms
+ ✓ Compiled /payroll in 449ms (825 modules)
+ GET /payroll 200 in 709ms
+ ✓ Compiled /training in 468ms (836 modules)
+ GET /training 200 in 715ms
+ ✓ Compiled /performance in 473ms (847 modules)
+ GET /performance 200 in 685ms
+ ✓ Compiled /recruitment in 462ms (856 modules)
+ GET /recruitment 200 in 666ms
+ ✓ Compiled /reports in 482ms (865 modules)
+ GET /reports 200 in 687ms
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 521ms (874 modules)
+ GET /settings 200 in 739ms
+ ✓ Compiled in 728ms (361 modules)
+ ✓ Compiled in 212ms (361 modules)
+ ✓ Compiled in 226ms (361 modules)
+ ✓ Compiled /recruitment in 359ms (449 modules)
+ GET /recruitment 200 in 684ms
+ ✓ Compiled in 414ms (361 modules)
+ ✓ Compiled in 165ms (361 modules)
+ ✓ Compiled in 194ms (361 modules)
  ○ Compiling / ...
- ✓ Compiled / in 1427ms (568 modules)
- GET / 307 in 1904ms
-[?25h
+ ✓ Compiled / in 559ms (679 modules)
+ GET / 307 in 819ms
+ GET / 307 in 78ms
+ GET / 307 in 75ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 643ms (705 modules)
+ GET /login 200 in 912ms
+ GET / 307 in 77ms
+ GET /login 200 in 54ms
