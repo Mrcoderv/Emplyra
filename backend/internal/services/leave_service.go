@@ -47,7 +47,7 @@ func (s *LeaveService) Create(tenantID, employeeID, leaveTypeID, start, end, rea
 		return nil, err
 	}
 	if st.After(*en) {
-		return nil, errors.New("start date cannot be after end date")
+		return nil, ErrLeaveInvalidDates
 	}
 	dstart := datatypes.Date(*st)
 	dend := datatypes.Date(*en)
@@ -57,7 +57,7 @@ func (s *LeaveService) Create(tenantID, employeeID, leaveTypeID, start, end, rea
 	}
 	days := businessDays(*st, *en)
 	if days < 1 {
-		return nil, errors.New("leave must include at least one working day")
+		return nil, ErrLeaveNoWorkingDay
 	}
 	if err := s.checkBalance(tenantID, employeeID, leaveTypeID, st.Year(), days); err != nil {
 		return nil, err
@@ -104,15 +104,15 @@ func (s *LeaveService) Get(tenantID, id string) (*models.Leave, error) {
 	return l, nil
 }
 
-func (s *LeaveService) Approve(tenantID, id, note string, actorID, ip, ua string) (*models.Leave, error) {
-	return s.decide(tenantID, id, models.LeaveApproved, note, actorID, ip, ua)
+func (s *LeaveService) Approve(tenantID, id, note, reviewerEmpID, actorID, ip, ua string) (*models.Leave, error) {
+	return s.decide(tenantID, id, models.LeaveApproved, note, reviewerEmpID, actorID, ip, ua)
 }
 
-func (s *LeaveService) Reject(tenantID, id, note string, actorID, ip, ua string) (*models.Leave, error) {
-	return s.decide(tenantID, id, models.LeaveRejected, note, actorID, ip, ua)
+func (s *LeaveService) Reject(tenantID, id, note, reviewerEmpID, actorID, ip, ua string) (*models.Leave, error) {
+	return s.decide(tenantID, id, models.LeaveRejected, note, reviewerEmpID, actorID, ip, ua)
 }
 
-func (s *LeaveService) decide(tenantID, id string, status models.LeaveStatus, note string, actorID, ip, ua string) (*models.Leave, error) {
+func (s *LeaveService) decide(tenantID, id string, status models.LeaveStatus, note, reviewerEmpID, actorID, ip, ua string) (*models.Leave, error) {
 	leave, err := s.leaves.FindByID(tenantID, id)
 	if err != nil {
 		return nil, ErrNotFound
@@ -123,9 +123,12 @@ func (s *LeaveService) decide(tenantID, id string, status models.LeaveStatus, no
 	now := time.Now().UTC()
 	fields := map[string]interface{}{
 		"status":      status,
-		"reviewer_id": actorID,
+		"reviewer_id": gorm.Expr("NULL"),
 		"reviewed_at": &now,
 		"review_note": note,
+	}
+	if reviewerEmpID != "" {
+		fields["reviewer_id"] = reviewerEmpID
 	}
 	action := models.ActionReject
 	if status == models.LeaveApproved {

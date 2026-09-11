@@ -67,12 +67,12 @@ func (s *AttendanceService) CheckOut(tenantID, employeeID, remarks string, overt
 		return nil, ErrNoCheckIn
 	}
 	if existing.CheckOut != nil {
-		return nil, errors.New("already checked out today")
+		return nil, ErrAlreadyCheckedOut
 	}
 	checkOut := now
 	hours := checkOut.Sub(*existing.CheckIn).Hours()
 	if hours < 0 {
-		return nil, errors.New("check-out time precedes check-in")
+		return nil, ErrCheckOutBeforeCheckIn
 	}
 	fields := map[string]interface{}{
 		"check_out":     &checkOut,

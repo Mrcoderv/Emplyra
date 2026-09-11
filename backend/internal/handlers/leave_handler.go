@@ -100,7 +100,11 @@ func (h *LeaveHandler) Approve(c *gin.Context) {
 	var req dto.LeaveDecisionRequest
 	_ = c.ShouldBindJSON(&req)
 	p := middleware.MustPrincipal(c)
-	l, err := h.svc.Approve(middleware.TenantID(c), c.Param("id"), req.Note, p.UserID, clientIP(c), userAgent(c))
+	reviewerID, err := h.empIDForUser(c)
+	if err != nil {
+		reviewerID = ""
+	}
+	l, err := h.svc.Approve(middleware.TenantID(c), c.Param("id"), req.Note, reviewerID, p.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return
@@ -112,7 +116,11 @@ func (h *LeaveHandler) Reject(c *gin.Context) {
 	var req dto.LeaveDecisionRequest
 	_ = c.ShouldBindJSON(&req)
 	p := middleware.MustPrincipal(c)
-	l, err := h.svc.Reject(middleware.TenantID(c), c.Param("id"), req.Note, p.UserID, clientIP(c), userAgent(c))
+	reviewerID, err := h.empIDForUser(c)
+	if err != nil {
+		reviewerID = ""
+	}
+	l, err := h.svc.Reject(middleware.TenantID(c), c.Param("id"), req.Note, reviewerID, p.UserID, clientIP(c), userAgent(c))
 	if err != nil {
 		mapServiceError(c, err)
 		return

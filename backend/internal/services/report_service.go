@@ -30,7 +30,7 @@ type HeadcountRow struct {
 func (s *ReportService) HeadcountByDepartment() ([]HeadcountRow, error) {
 	rows := make([]HeadcountRow, 0)
 	err := s.db.Model(&models.Employee{}).
-		Select(`COALESCE(departments.id,'') AS department_id,
+		Select(`COALESCE(departments.id::text,'') AS department_id,
 		        COALESCE(departments.name,'Unassigned') AS department,
 		        COUNT(*) AS total,
 		        COUNT(*) FILTER (WHERE employees.status = 'ACTIVE') AS active,
@@ -128,13 +128,21 @@ type TypeDaysRow struct {
 
 func (s *ReportService) LeaveSummary() (*LeaveSummary, error) {
 	out := &LeaveSummary{}
+	var counts struct {
+		Pending  int64
+		Approved int64
+		Rejected int64
+	}
 	if err := s.db.Model(&models.Leave{}).
 		Select(`COUNT(*) FILTER (WHERE status = 'PENDING') AS pending,
 		        COUNT(*) FILTER (WHERE status = 'APPROVED') AS approved,
 		        COUNT(*) FILTER (WHERE status = 'REJECTED') AS rejected`).
-		Scan(out).Error; err != nil {
+		Scan(&counts).Error; err != nil {
 		return nil, err
 	}
+	out.Pending = counts.Pending
+	out.Approved = counts.Approved
+	out.Rejected = counts.Rejected
 	var typeRows []struct {
 		LeaveTypeID string
 		LeaveType   string

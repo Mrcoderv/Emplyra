@@ -179,9 +179,9 @@ func NewRouter(d Deps) *gin.Engine {
 		payroll := protected.Group("/payroll")
 		payroll.GET("", rbac("payroll:read"), payHandler.List)
 		payroll.POST("/generate", rbac("payroll:create"), payHandler.Generate)
-		payroll.POST("/process", rbac("payroll:process"), payHandler.Process)
-		payroll.POST("/mark-paid", rbac("payroll:pay"), payHandler.MarkPaid)
-		payroll.POST("/cancel", rbac("payroll:cancel"), payHandler.Cancel)
+		payroll.POST("/:id/process", rbac("payroll:process"), payHandler.Process)
+		payroll.POST("/:id/mark-paid", rbac("payroll:pay"), payHandler.MarkPaid)
+		payroll.POST("/:id/cancel", rbac("payroll:cancel"), payHandler.Cancel)
 		payroll.GET("/:id", rbac("payroll:read"), payHandler.Get)
 		payroll.GET("/:id/payslip", rbac("payroll:payslip"), payHandler.Payslip)
 

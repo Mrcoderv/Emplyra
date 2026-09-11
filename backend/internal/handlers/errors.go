@@ -44,13 +44,17 @@ func mapServiceError(c *gin.Context, err error) bool {
 		responses.Error(c, http.StatusForbidden, err.Error(), nil)
 	case errors.Is(err, services.ErrTokenInvalid):
 		responses.Error(c, http.StatusUnauthorized, "invalid or expired token", nil)
+	case errors.Is(err, services.ErrInvalidDate), errors.Is(err, services.ErrLeaveInvalidDates):
+		responses.Error(c, http.StatusBadRequest, err.Error(), nil)
+	case errors.Is(err, services.ErrLeaveNoWorkingDay):
+		responses.Error(c, http.StatusUnprocessableEntity, err.Error(), nil)
 	case errors.Is(err, services.ErrInsufficientLeaveBalance):
 		responses.Error(c, http.StatusUnprocessableEntity, err.Error(), nil)
 	case errors.Is(err, services.ErrLeaveOverlap):
 		responses.Error(c, http.StatusConflict, err.Error(), nil)
-	case errors.Is(err, services.ErrAlreadyCheckedIn):
+	case errors.Is(err, services.ErrAlreadyCheckedIn), errors.Is(err, services.ErrAlreadyCheckedOut):
 		responses.Error(c, http.StatusConflict, err.Error(), nil)
-	case errors.Is(err, services.ErrNoCheckIn):
+	case errors.Is(err, services.ErrNoCheckIn), errors.Is(err, services.ErrCheckOutBeforeCheckIn):
 		responses.Error(c, http.StatusBadRequest, err.Error(), nil)
 	case errors.Is(err, services.ErrDuplicateApplication):
 		responses.Error(c, http.StatusConflict, err.Error(), nil)

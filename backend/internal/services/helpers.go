@@ -11,7 +11,7 @@ func parseDate(s string) (*time.Time, error) {
 	}
 	t, err := time.Parse("2006-01-02", s)
 	if err != nil {
-		return nil, fmt.Errorf("invalid date %q (expected YYYY-MM-DD)", s)
+		return nil, fmt.Errorf("%w: %q", ErrInvalidDate, s)
 	}
 	return &t, nil
 }
