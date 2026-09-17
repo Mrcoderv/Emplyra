@@ -22,7 +22,6 @@
 - **Existing git history:** none (`git status` fails — directory is not a git repo).
 - **Existing toolchain detected:**
   - Go `1.27.0` (linux/amd64)
-  - Docker `29.7.2` + Docker Compose `v2.40.3`
   - Network access to `proxy.golang.org` confirmed
 
 Because the project is new, the architecture below is the *planned* architecture, built
@@ -85,7 +84,7 @@ docs/                  CODEBASE-MAP.md, API-CONTRACT.md, swagger.json
 | Rate limiting        | `golang.org/x/time/rate` in-memory (login + general)        |
 | Swagger              | swaggo (`swag`, `gin-swagger`)                              |
 | Tests                | stdlib `testing` + `testify` where helpful                  |
-| Containers           | `backend/Dockerfile` (multi-stage) + `backend/docker-compose.yml` |
+| Local Postgres       | PostgreSQL 16 expected on `localhost:5432`                         |
 
 ## 4. Database Structure (planned tables)
 
@@ -222,7 +221,7 @@ Everything — the entire HRMS backend will be built in phases (see §12).
 5. **Phase 5** — recruitment, candidates, interviews, onboarding.
 6. **Phase 6** — performance, goals, KPIs, training.
 7. **Phase 7** — documents, notifications, reports, audit logs, dashboard APIs.
-8. **Hardening** — Swagger, API-CONTRACT.md, tests, Docker, migrations, gofmt/vet/test.
+8. **Hardening** — Swagger, API-CONTRACT.md, tests, migrations, gofmt/vet/test.
 
 Each phase ends with: `gofmt` → `go vet` → `go test ./...` → route check → migration check →
 doc updates → report.
@@ -309,7 +308,7 @@ All phases are shipped. Deviations from the plan above:
 
 ```bash
 cp backend/.env.example backend/.env   # set JWT_SECRET + super admin credentials
-docker compose -f backend/docker-compose.yml up -d db # or point DB_HOST at an existing PostgreSQL 16+
+# ensure PostgreSQL 16 is running locally on port 5432
 go run ./cmd/server     # migrates + seeds on startup (run from backend/)
 # integration tests:
 TEST_DB_URL='postgres://emplyra:emplyra_password@localhost:5432/emplyra' go test ./internal/services/ -run Integration

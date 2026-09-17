@@ -25,7 +25,7 @@ emplyra/
 ```bash
 cd backend
 cp .env.example .env      # set JWT_SECRET + super admin credentials
-docker compose up -d db   # start PostgreSQL 16
+# ensure PostgreSQL 16 is running locally on port 5432
 go run ./cmd/server       # migrates + seeds on startup
 ```
 

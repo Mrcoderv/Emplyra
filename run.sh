@@ -2,24 +2,20 @@
 # Emplyra one-click launcher (Linux / macOS / WSL).
 #
 # Starts all three pieces so you can develop with one command:
-#   1. Database  — Postgres 16 via Docker (backend/docker-compose.yml)
+#   1. Database  — local PostgreSQL 16
 #   2. Backend   — Go API server (backend/, reads backend/.env), port 8080
 #   3. Frontend  — Next.js app (frontend/), port 3000
 #
 # Windows: use run.bat (or run.ps1) instead. WSL users can use this script.
-# Ctrl+C stops the backend + frontend and stops (not removes) the database
-# container. Database data lives in the named docker volume, so it survives.
+# Ctrl+C stops the backend + frontend.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND="$ROOT/backend"
 FRONTEND="$ROOT/frontend"
 RUN_DIR="$ROOT/.run"
-DB_CONTAINER="emplyra-db"
 DB_USER="emplyra"
 DB_NAME="emplyra"
-DB_HOST_PORT="5432"
-COMPOSE_OPTS=(-f "$BACKEND/docker-compose.yml" --project-directory "$BACKEND")
 
 C_GREEN='' C_YELLOW='' C_CYAN='' C_RED='' C_NC=''
 if [ -t 1 ]; then
@@ -32,10 +28,10 @@ fail() { printf "${C_RED}[x]${C_NC} %s\n" "$*" >&2; exit 1; }
 
 require() { command -v "$1" >/dev/null 2>&1 || fail "'$1' not found on PATH. Install it first: $2"; }
 
-require docker "Docker Desktop / Docker Engine (needed for the Postgres database)"
 require go     "Go (https://go.dev/dl/)"
 require node   "Node.js 18+ (https://nodejs.org/)"
 require pnpm   "pnpm  (npm i -g pnpm)"
+require psql   "psql — install PostgreSQL locally"
 
 mkdir -p "$RUN_DIR"
 
@@ -52,11 +48,6 @@ wait_port() {
   return 1
 }
 
-# port_open <host> <port>  — quick single TCP probe: 0 if accepting, 1 if closed/free.
-port_open() {
-  (exec 3<>"/dev/tcp/$1/$2") 2>/dev/null
-}
-
 CLEANED=0
 cleanup() {
   [ "$CLEANED" = 1 ] && return
@@ -70,51 +61,28 @@ cleanup() {
   if [ -n "${BACKEND_PID:-}" ]; then
     kill "$BACKEND_PID" 2>/dev/null || true
   fi
-  step "Stopping database container..."
-  docker compose "${COMPOSE_OPTS[@]}" stop db >/dev/null 2>&1 || true
-  info "All stopped. Database data is preserved in the docker volume (emplyra_pgdata)."
+  info "All stopped."
 }
 interrupt() { exit 0; }
 trap interrupt INT TERM
 trap cleanup EXIT
 
 # --- 1. Database ------------------------------------------------------------
-step "Starting database (Postgres 16 via Docker)..."
-docker info >/dev/null 2>&1 || fail "Docker is not running. Start Docker Desktop/Engine and retry."
+DB_HOST="${DB_HOST:-localhost}"
+DB_PORT="${DB_PORT:-5432}"
+step "Checking local Postgres on $DB_HOST:$DB_PORT..."
+pg_isready -h "$DB_HOST" -p "$DB_PORT" >/dev/null 2>&1 \
+  || fail "Postgres is not accepting connections on $DB_HOST:$DB_PORT. Is it running?"
 
-# If host port 5432 is already taken (e.g. by a locally installed Postgres),
-# pick the next free port for the database and point the backend at it.
-if port_open 127.0.0.1 5432; then
-  warn "Port 5432 is already in use (a local Postgres?). Finding a free port for the Emplyra database..."
-  DB_HOST_PORT=""
-  for candidate in $(seq 5433 5452); do
-    if ! port_open 127.0.0.1 "$candidate"; then
-      DB_HOST_PORT="$candidate"
-      break
-    fi
-  done
-  [ -n "$DB_HOST_PORT" ] || fail "No free port between 5433-5452 for the Emplyra database."
-  cat > "$RUN_DIR/compose.override.yml" <<EOF
-services:
-  db:
-    ports: !override
-      - "127.0.0.1:${DB_HOST_PORT}:5432"
-EOF
-  COMPOSE_OPTS=(-f "$BACKEND/docker-compose.yml" -f "$RUN_DIR/compose.override.yml" --project-directory "$BACKEND")
-  export DB_PORT="$DB_HOST_PORT"
-  info "Using host port $DB_HOST_PORT for the Emplyra database (backend DB_PORT=$DB_HOST_PORT)."
+if ! PGPASSWORD="${DB_PASSWORD:-emplyra_password}" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -c '\q' >/dev/null 2>&1; then
+  psql -h "$DB_HOST" -p "$DB_PORT" -U postgres -c "CREATE ROLE $DB_USER LOGIN PASSWORD '${DB_PASSWORD:-emplyra_password}';" 2>/dev/null \
+    || warn "Could not create role '$DB_USER'. You may need to create it manually."
 fi
-
-docker compose "${COMPOSE_OPTS[@]}" up -d db \
-  || fail "Could not start the database container."
-
-info "Waiting for Postgres to accept connections..."
-tries=0
-until docker exec "$DB_CONTAINER" pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; do
-  tries=$((tries + 1))
-  [ "$tries" -ge 60 ] && fail "Postgres did not become ready in time."
-  sleep 1
-done
+if ! PGPASSWORD="${DB_PASSWORD:-emplyra_password}" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c '\q' >/dev/null 2>&1; then
+  createdb -h "$DB_HOST" -p "$DB_PORT" -O "$DB_USER" "$DB_NAME" 2>/dev/null \
+    || createdb -h "$DB_HOST" -p "$DB_PORT" -U postgres -O "$DB_USER" "$DB_NAME" 2>/dev/null \
+    || warn "Could not create database '$DB_NAME'. Create it manually."
+fi
 info "Database ready."
 
 # --- 2. Backend -------------------------------------------------------------
@@ -149,8 +117,7 @@ echo
 info "Logs for all services are visible right below. Press Ctrl+C to stop."
 echo
 
-# Block until the services stop. If a service dies on its own, wait() returns
-# non-zero and the EXIT trap shuts down whatever is still running.
+# Block until the services stop.
 set +e
 wait "$BACKEND_PID" "$FRONTEND_PID"
 STATUS=$?

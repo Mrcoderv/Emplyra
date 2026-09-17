@@ -1,12 +1,11 @@
 # Emplyra one-click launcher (Windows — PowerShell).
 #
 # Starts all three pieces:
-#   1. Database  — Postgres 16 via Docker (backend/docker-compose.yml)
+#   1. Database  — local PostgreSQL 16
 #   2. Backend   — Go API server (backend/, reads backend/.env), port 8080
 #   3. Frontend  — Next.js app (frontend/), port 3000
 #
-# Press Enter (or Ctrl+C) in this window to stop the backend + frontend and
-# stop (not remove) the database container. Data persists in the named volume.
+# Press Enter (or Ctrl+C) in this window to stop the backend + frontend.
 #
 # Run directly:
 #   powershell -ExecutionPolicy Bypass -File .\run.ps1
@@ -18,16 +17,13 @@ $Root    = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $Backend = Join-Path $Root 'backend'
 $Frontend = Join-Path $Root 'frontend'
 $RunDir  = Join-Path $Root '.run'
-$DbContainer = 'emplyra-db'
-$DbUser      = 'emplyra'
-$DbName      = 'emplyra'
 
 function Step($Message) { Write-Host "==> $Message" -ForegroundColor Cyan }
 function Info($Message) { Write-Host "[ok] $Message" -ForegroundColor Green }
 function Warn($Message) { Write-Host "[!] $Message" -ForegroundColor Yellow }
 function Fail($Message) { Write-Host "[x] $Message" -ForegroundColor Red; exit 1 }
 
-foreach ($cmd in @('docker', 'go', 'node', 'pnpm')) {
+foreach ($cmd in @('go', 'node', 'pnpm', 'psql')) {
   if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
     Fail "[$cmd] not found on PATH. Install it and retry."
   }
@@ -36,22 +32,13 @@ foreach ($cmd in @('docker', 'go', 'node', 'pnpm')) {
 New-Item -ItemType Directory -Force -Path $RunDir | Out-Null
 
 # --- 1. Database ----------------------------------------------------------
-Step 'Starting database (Postgres 16 via Docker)...'
-docker info *> $null
-if ($LASTEXITCODE -ne 0) { Fail 'Docker is not running. Start Docker Desktop and retry.' }
-
-$composeFile = Join-Path $Backend 'docker-compose.yml'
-docker compose -f $composeFile --project-directory $Backend up -d db
-if ($LASTEXITCODE -ne 0) { Fail 'Could not start the database container. Is port 5432 already in use?' }
-
-Step 'Waiting for Postgres to accept connections...'
-$ready = $false
-for ($i = 0; $i -lt 60; $i++) {
-  docker exec $DbContainer pg_isready -U $DbUser -d $DbName *> $null
-  if ($LASTEXITCODE -eq 0) { $ready = $true; break }
-  Start-Sleep -Seconds 1
+$DbHost = if ($env:DB_HOST) { $env:DB_HOST } else { 'localhost' }
+$DbPort = if ($env:DB_PORT) { $env:DB_PORT } else { '5432' }
+Step "Checking local Postgres on ${DbHost}:${DbPort}..."
+& psql -h $DbHost -p $DbPort -U emplyra -d emplyra -c '\q' 2>$null
+if ($LASTEXITCODE -ne 0) {
+  Fail "Postgres is not accepting connections on ${DbHost}:${DbPort}. Is it running?"
 }
-if (-not $ready) { Fail 'Postgres did not become ready in time.' }
 Info 'Database ready.'
 
 # --- 2. Backend -----------------------------------------------------------
@@ -121,7 +108,6 @@ try {
 } finally {
   if ($frontend) { taskkill /F /T /PID $frontend.Id *> $null }
   if ($backend)  { Stop-Process -Id $backend.Id  -Force -ErrorAction SilentlyContinue }
-  docker compose -f $composeFile --project-directory $Backend stop db | Out-Null
   Write-Host ''
-  Info 'All stopped. Database data is preserved in the docker volume (emplyra_pgdata).'
+  Info 'All stopped.'
 }
